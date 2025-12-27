@@ -14,8 +14,8 @@ public class PuzzleGraph {
      * Graph Node dengan Adjacency List
      */
     public static class GraphNode {
-        private PuzzleState state;
-        private ArrayList<GraphNode> neighbors; // Adjacency List
+        private final PuzzleState state;
+        private final ArrayList<GraphNode> neighbors; // Adjacency List
         private boolean visited;
         private int distance;
 
@@ -50,8 +50,7 @@ public class PuzzleGraph {
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
-            if (!(obj instanceof GraphNode)) return false;
-            GraphNode other = (GraphNode) obj;
+            if (!(obj instanceof GraphNode other)) return false;
             return this.state.getStateKey().equals(other.state.getStateKey());
         }
     }
@@ -70,7 +69,7 @@ public class PuzzleGraph {
     }
 
     // Mengganti HashMap dengan ArrayList
-    private ArrayList<NodeEntry> nodes;
+    private final ArrayList<NodeEntry> nodes;
     private int totalNodes;
     private int totalEdges;
 
@@ -141,6 +140,7 @@ public class PuzzleGraph {
         while (!queue.isEmpty() && startNode.getDistance() < maxDepth) {
             GraphNode current = queue.poll();
 
+            assert current != null;
             List<PuzzleState> neighborStates = current.getState().getNeighbors();
 
             for (PuzzleState neighborState : neighborStates) {
@@ -316,7 +316,7 @@ public class PuzzleGraph {
         if (nodes.isEmpty()) return true;
 
         resetVisited();
-        GraphNode start = nodes.get(0).node;
+        GraphNode start = nodes.getFirst().node;
 
         Queue<GraphNode> queue = new LinkedList<>();
         queue.add(start);

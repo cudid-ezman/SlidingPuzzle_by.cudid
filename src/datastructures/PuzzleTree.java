@@ -14,11 +14,11 @@ public class PuzzleTree {
      * Tree Node
      */
     public static class TreeNode {
-        private PuzzleState state;
+        private final PuzzleState state;
         private TreeNode parent;
-        private ArrayList<TreeNode> children; // Menggunakan ArrayList
+        private final ArrayList<TreeNode> children; // Menggunakan ArrayList
         private int depth;
-        private String moveFromParent;
+        private final String moveFromParent;
 
         public TreeNode(PuzzleState state) {
             this.state = state;
@@ -97,10 +97,10 @@ public class PuzzleTree {
         }
     }
 
-    private TreeNode root;
+    private final TreeNode root;
     private int totalNodes;
     private int maxDepth;
-    private ArrayList<NodeMapEntry> nodeMap; // Mengganti HashMap
+    private final ArrayList<NodeMapEntry> nodeMap; // Mengganti HashMap
 
     public PuzzleTree(PuzzleState rootState) {
         this.root = new TreeNode(rootState);
@@ -258,9 +258,8 @@ public class PuzzleTree {
                 TreeNode node = queue.poll();
                 currentLevel.add(node);
 
-                for (TreeNode child : node.children) {
-                    queue.add(child);
-                }
+                assert node != null;
+                queue.addAll(node.children);
             }
 
             result.add(currentLevel);

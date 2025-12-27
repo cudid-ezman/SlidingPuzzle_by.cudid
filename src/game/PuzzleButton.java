@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 
 /**
  * Custom button untuk tile puzzle
@@ -14,7 +13,7 @@ public class PuzzleButton extends JButton {
     private boolean isEmpty;
     private int value;
     private Point position; // Posisi di grid
-    private Point originalPosition; // Posisi asli (untuk validasi)
+    private final Point originalPosition; // Posisi asli (untuk validasi)
     private static final Color BORDER_NORMAL = new Color(180, 180, 180);
     private static final Color BORDER_HOVER = new Color(255, 215, 0);
     private static final Color EMPTY_COLOR = new Color(240, 240, 240);

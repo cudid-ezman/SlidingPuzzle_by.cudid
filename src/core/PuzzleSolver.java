@@ -10,8 +10,8 @@ import java.util.List;
  */
 public class PuzzleSolver {
 
-    private PuzzleState goalState;
-    private int maxIterations;
+    private final PuzzleState goalState;
+    private final int maxIterations;
 
     public PuzzleSolver(PuzzleState goalState) {
         this.goalState = goalState;

@@ -9,18 +9,15 @@ import java.util.List;
  */
 public class SolverWorker extends SwingWorker<List<PuzzleState>, String> {
 
-    private PuzzleState startState;
-    private PuzzleState goalState;
-    private OptimizedPuzzleSolver solver;
-    private String taskType;
+    private final PuzzleState startState;
+    private final OptimizedPuzzleSolver solver;
+    private final String taskType;
     private JDialog progressDialog;
     private JLabel progressLabel;
-    private JProgressBar progressBar;
-    private JFrame parent;
+    private final JFrame parent;
 
     public SolverWorker(PuzzleState startState, PuzzleState goalState, String taskType, JFrame parent) {
         this.startState = startState;
-        this.goalState = goalState;
         this.solver = new OptimizedPuzzleSolver(goalState);
         this.taskType = taskType;
         this.parent = parent;
@@ -44,7 +41,7 @@ public class SolverWorker extends SwingWorker<List<PuzzleState>, String> {
                 "Finding solution path..." : "Calculating hint...");
         progressLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
 
-        progressBar = new JProgressBar();
+        JProgressBar progressBar = new JProgressBar();
         progressBar.setIndeterminate(true);
         progressBar.setAlignmentX(JProgressBar.CENTER_ALIGNMENT);
 
@@ -65,7 +62,7 @@ public class SolverWorker extends SwingWorker<List<PuzzleState>, String> {
      * Background computation
      */
     @Override
-    protected List<PuzzleState> doInBackground() throws Exception {
+    protected List<PuzzleState> doInBackground() {
         System.out.println("[WORKER] Starting background computation...");
         publish("Starting optimized BFS algorithm...");
 
@@ -92,7 +89,7 @@ public class SolverWorker extends SwingWorker<List<PuzzleState>, String> {
     @Override
     protected void process(List<String> chunks) {
         if (progressLabel != null && !chunks.isEmpty()) {
-            String latestMessage = chunks.get(chunks.size() - 1);
+            String latestMessage = chunks.getLast();
             progressLabel.setText(latestMessage);
 
             // Print ke console juga

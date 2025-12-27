@@ -49,8 +49,7 @@ public class GameLevel {
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
-            if (!(obj instanceof Difficulty)) return false;
-            Difficulty other = (Difficulty) obj;
+            if (!(obj instanceof Difficulty other)) return false;
             return this.name.equals(other.name);
         }
 
@@ -79,7 +78,7 @@ public class GameLevel {
         }
     }
 
-    private Difficulty currentDifficulty;
+    private final Difficulty currentDifficulty;
     private int currentLevelNumber;
     private int totalMoves;
     private int bestScore;
@@ -87,7 +86,7 @@ public class GameLevel {
     private long elapsedTime;
 
     // Mengganti HashMap dengan ArrayList
-    private static ArrayList<ScoreEntry> bestScores = new ArrayList<>();
+    private static final ArrayList<ScoreEntry> bestScores = new ArrayList<>();
 
     public GameLevel(Difficulty difficulty) {
         this.currentDifficulty = difficulty;
@@ -312,8 +311,7 @@ public class GameLevel {
      * Generate puzzle dengan tingkat kesulitan tertentu
      */
     public PuzzleState generatePuzzleWithDifficulty(int minMoves) {
-        PuzzleState goalState = generateGoalState();
-        PuzzleState current = goalState;
+        PuzzleState current = generateGoalState();
 
         // Menggunakan ArrayList untuk menyimpan visited states
         // Menggantikan HashSet

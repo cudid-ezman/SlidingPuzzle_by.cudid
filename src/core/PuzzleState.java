@@ -9,13 +9,13 @@ import java.util.List;
  * Menggunakan struktur data: Array 2D, List, String
  */
 public class PuzzleState {
-    private int[][] board;
+    private final int[][] board;
     private Point emptyPosition;
     private String stateKey;
     private PuzzleState parent;
     private String moveDescription;
-    private int rows;
-    private int cols;
+    private final int rows;
+    private final int cols;
 
     public PuzzleState(int[][] board, int rows, int cols) {
         this.rows = rows;
@@ -178,8 +178,7 @@ public class PuzzleState {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof PuzzleState)) return false;
-        PuzzleState other = (PuzzleState) obj;
+        if (!(obj instanceof PuzzleState other)) return false;
         return this.stateKey.equals(other.stateKey);
     }
 

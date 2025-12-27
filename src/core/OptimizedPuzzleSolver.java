@@ -8,7 +8,7 @@ import java.util.*;
  */
 public class OptimizedPuzzleSolver {
 
-    private PuzzleState goalState;
+    private final PuzzleState goalState;
     private int maxIterations;
     private boolean verboseMode; // Mode detail untuk debugging
 
@@ -113,7 +113,7 @@ public class OptimizedPuzzleSolver {
 
                 // FIXED: Cek division by zero
                 if (elapsed > 0) {
-                    long speed = (iterations * 1000) / elapsed;
+                    long speed = (iterations * 1000L) / elapsed;
                     System.out.println("└─ Avg Speed: " + speed + " states/sec");
                 } else {
                     System.out.println("└─ Avg Speed: Very fast!");
@@ -171,15 +171,15 @@ public class OptimizedPuzzleSolver {
     private void printBoard(int[][] board) {
         String topBottom = repeat("─", board[0].length * 4 - 1);
         System.out.println("   ┌" + topBottom + "┐");
-        for (int i = 0; i < board.length; i++) {
+        for (int[] ints : board) {
             System.out.print("   │");
-            for (int j = 0; j < board[i].length; j++) {
-                if (board[i][j] == 0) {
+            for (int j = 0; j < ints.length; j++) {
+                if (ints[j] == 0) {
                     System.out.print(" * ");
                 } else {
-                    System.out.printf("%2d ", board[i][j]);
+                    System.out.printf("%2d ", ints[j]);
                 }
-                if (j < board[i].length - 1) System.out.print(" ");
+                if (j < ints.length - 1) System.out.print(" ");
             }
             System.out.println("│");
         }
@@ -190,13 +190,13 @@ public class OptimizedPuzzleSolver {
      * Print board dengan indentasi
      */
     private void printBoardIndented(int[][] board, String indent) {
-        for (int i = 0; i < board.length; i++) {
+        for (int[] ints : board) {
             System.out.print(indent);
-            for (int j = 0; j < board[i].length; j++) {
-                if (board[i][j] == 0) {
+            for (int anInt : ints) {
+                if (anInt == 0) {
                     System.out.print(" * ");
                 } else {
-                    System.out.printf("%2d ", board[i][j]);
+                    System.out.printf("%2d ", anInt);
                 }
             }
             System.out.println();
@@ -257,11 +257,7 @@ public class OptimizedPuzzleSolver {
      * Helper: Create repeated string (Java 8 compatible)
      */
     private String repeat(String str, int count) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < count; i++) {
-            sb.append(str);
-        }
-        return sb.toString();
+        return String.valueOf(str).repeat(Math.max(0, count));
     }
 
     /**

@@ -8,8 +8,8 @@ import java.util.Stack;
  */
 public class MoveHistory {
 
-    private Stack<PuzzleState> history;
-    private int maxHistorySize;
+    private final Stack<PuzzleState> history;
+    private final int maxHistorySize;
 
     public MoveHistory() {
         this.history = new Stack<>();
@@ -27,7 +27,7 @@ public class MoveHistory {
     public void push(PuzzleState state) {
         // Jika sudah penuh, hapus yang paling lama (bottom of stack)
         if (history.size() >= maxHistorySize) {
-            history.remove(0);
+            history.removeFirst();
         }
         history.push(state);
     }

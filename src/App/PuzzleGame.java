@@ -32,7 +32,6 @@ public class PuzzleGame extends JFrame {
     private JLabel levelLabel;
     private JLabel movesLabel;
     private JLabel timeLabel;
-    private JLabel hintLabel;
     private Timer gameTimer;
 
     private BufferedImage puzzleImage;
