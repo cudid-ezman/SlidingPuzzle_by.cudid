@@ -4,70 +4,14 @@ import core.PuzzleState;
 
 import java.util.*;
 
-/**
- * Class untuk mengatur level permainan
- * REFACTORED: Mengganti Enum dengan Class biasa
- * Mengganti HashMap dengan ArrayList
- */
 public class GameLevel {
 
-    /**
-     * Difficulty Class - menggantikan Enum
-     * Menggunakan static instances untuk membuat "pseudo-enum"
-     */
-    public static class Difficulty {
-        private final String name;
-        private final int rows;
-        private final int cols;
-        private final String description;
-
-        // Static instances (seperti enum constants)
+    public record Difficulty(String name, int rows, int cols, String description) {
         public static final Difficulty EASY = new Difficulty("EASY", 3, 3, "Mudah - 3x3");
         public static final Difficulty MEDIUM = new Difficulty("MEDIUM", 4, 3, "Sedang - 4x3");
         public static final Difficulty HARD = new Difficulty("HARD", 4, 4, "Sulit - 4x4");
-
-        // Array untuk menyimpan semua difficulties (seperti Enum.values())
-        private static final Difficulty[] ALL_DIFFICULTIES = {EASY, MEDIUM, HARD};
-
-        private Difficulty(String name, int rows, int cols, String description) {
-            this.name = name;
-            this.rows = rows;
-            this.cols = cols;
-            this.description = description;
-        }
-
-        public String getName() { return name; }
-        public int getRows() { return rows; }
-        public int getCols() { return cols; }
-        public String getDescription() { return description; }
-        public int getTotalTiles() { return rows * cols; }
-
-        public static Difficulty[] values() {
-            return ALL_DIFFICULTIES.clone();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof Difficulty other)) return false;
-            return this.name.equals(other.name);
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
     }
 
-    /**
-     * Best Score Entry - untuk menyimpan score per difficulty
-     * Menggantikan HashMap dengan ArrayList of entries
-     */
     private static class ScoreEntry {
         Difficulty difficulty;
         int score;
@@ -85,7 +29,6 @@ public class GameLevel {
     private long startTime;
     private long elapsedTime;
 
-    // Mengganti HashMap dengan ArrayList
     private static final ArrayList<ScoreEntry> bestScores = new ArrayList<>();
 
     public GameLevel(Difficulty difficulty) {
@@ -96,79 +39,58 @@ public class GameLevel {
         this.startTime = System.currentTimeMillis();
     }
 
-    /**
-     * Get best score untuk difficulty tertentu dari ArrayList
-     * Menggantikan HashMap.get()
-     */
     private int getBestScoreForDifficulty(Difficulty difficulty) {
         for (ScoreEntry entry : bestScores) {
             if (entry.difficulty.equals(difficulty)) {
                 return entry.score;
             }
         }
-        return Integer.MAX_VALUE; // Default jika tidak ditemukan
+        return Integer.MAX_VALUE;
     }
 
-    /**
-     * Set best score untuk difficulty tertentu di ArrayList
-     * Menggantikan HashMap.put()
-     */
     private void setBestScoreForDifficulty(Difficulty difficulty, int score) {
-        // Cari apakah sudah ada entry untuk difficulty ini
         for (ScoreEntry entry : bestScores) {
             if (entry.difficulty.equals(difficulty)) {
                 entry.score = score;
                 return;
             }
         }
-        // Jika belum ada, tambahkan baru
         bestScores.add(new ScoreEntry(difficulty, score));
     }
 
-    /**
-     * Generate puzzle state awal untuk level ini
-     * FIXED: Ensure minimum distance from goal
-     */
     public PuzzleState generateInitialState() {
-        int rows = currentDifficulty.getRows();
-        int cols = currentDifficulty.getCols();
 
-        // Target MINIMUM moves from goal
-        // Ini memastikan puzzle tidak terlalu dekat dengan goal
         int minMovesFromGoal;
         int maxScrambleMoves;
 
         if (currentDifficulty.equals(Difficulty.EASY)) {
-            minMovesFromGoal = 8;  // At least 8 moves dari goal
+            minMovesFromGoal = 8;
             maxScrambleMoves = 15;
         } else if (currentDifficulty.equals(Difficulty.MEDIUM)) {
-            minMovesFromGoal = 10; // At least 10 moves dari goal
+            minMovesFromGoal = 10;
             maxScrambleMoves = 20;
         } else {
-            minMovesFromGoal = 12; // At least 12 moves dari goal
+            minMovesFromGoal = 12;
             maxScrambleMoves = 25;
         }
 
         System.out.println("[LEVEL] Generating puzzle...");
         System.out.println("[LEVEL] Target minimum moves from goal: " + minMovesFromGoal);
-        System.out.println("[LEVEL] Difficulty: " + currentDifficulty.getDescription());
+        System.out.println("[LEVEL] Difficulty: " + currentDifficulty.description());
 
         PuzzleState bestState = null;
         int bestDistance = 0;
-        int maxAttempts = 20; // Try 20 times
+        int maxAttempts = 20;
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            // Start dari goal dan scramble
             PuzzleState state = generateGoalState();
             PuzzleState prevState = null;
 
-            // Random scramble moves
             int scrambleMoves = minMovesFromGoal + (int)(Math.random() * (maxScrambleMoves - minMovesFromGoal));
 
             for (int i = 0; i < scrambleMoves; i++) {
                 List<PuzzleState> neighbors = state.getNeighbors();
 
-                // Filter: jangan kembali ke state sebelumnya
                 ArrayList<PuzzleState> validMoves = new ArrayList<>();
                 for (PuzzleState neighbor : neighbors) {
                     if (prevState == null ||
@@ -184,31 +106,25 @@ public class GameLevel {
                 }
             }
 
-            // Verify solvability
             if (!state.isSolvable()) {
-                continue; // Skip this attempt
+                continue;
             }
 
-            // Check if it's goal state
             PuzzleState goalState = generateGoalState();
             if (state.getStateKey().equals(goalState.getStateKey())) {
-                continue; // Skip, too close to goal!
+                continue;
             }
 
-            // Quick check: how far is this from goal?
-            // Count misplaced tiles (simple heuristic)
             int misplacedTiles = countMisplacedTiles(state);
 
             if (misplacedTiles >= minMovesFromGoal / 2) {
-                // This is far enough from goal!
                 if (misplacedTiles > bestDistance) {
                     bestState = state;
                     bestDistance = misplacedTiles;
                 }
 
-                // If we found a good one, use it
                 if (misplacedTiles >= minMovesFromGoal) {
-                    System.out.println("[LEVEL] ✅ Good puzzle found!");
+                    System.out.println("[LEVEL]  Good puzzle found!");
                     System.out.println("[LEVEL] Scramble moves: " + scrambleMoves);
                     System.out.println("[LEVEL] Misplaced tiles: " + misplacedTiles);
                     System.out.println("[LEVEL] Inversion count: " + state.countInversions());
@@ -217,16 +133,14 @@ public class GameLevel {
             }
         }
 
-        // Use best state we found
         if (bestState != null) {
-            System.out.println("[LEVEL] ✅ Using best found puzzle");
+            System.out.println("[LEVEL]  Using best found puzzle");
             System.out.println("[LEVEL] Misplaced tiles: " + bestDistance);
             System.out.println("[LEVEL] Inversion count: " + bestState.countInversions());
             return bestState;
         }
 
-        // Last resort: do DEEP scramble
-        System.out.println("[LEVEL] ⚠️  Doing deep scramble...");
+        System.out.println("[LEVEL]   Doing deep scramble...");
         PuzzleState state = generateGoalState();
         PuzzleState prevState = null;
 
@@ -256,9 +170,6 @@ public class GameLevel {
         return state;
     }
 
-    /**
-     * Count misplaced tiles (tiles not in goal position)
-     */
     private int countMisplacedTiles(PuzzleState state) {
         int[][] board = state.getBoard();
         int rows = state.getRows();
@@ -268,7 +179,6 @@ public class GameLevel {
         int expectedValue = 1;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                // Last position should be 0 (empty)
                 if (i == rows - 1 && j == cols - 1) {
                     if (board[i][j] != 0) {
                         misplaced++;
@@ -285,19 +195,16 @@ public class GameLevel {
         return misplaced;
     }
 
-    /**
-     * Generate goal state (solved state)
-     */
     public PuzzleState generateGoalState() {
-        int rows = currentDifficulty.getRows();
-        int cols = currentDifficulty.getCols();
+        int rows = currentDifficulty.rows();
+        int cols = currentDifficulty.cols();
         int[][] board = new int[rows][cols];
 
         int value = 1;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 if (i == rows - 1 && j == cols - 1) {
-                    board[i][j] = 0; // Empty tile di akhir
+                    board[i][j] = 0;
                 } else {
                     board[i][j] = value++;
                 }
@@ -307,54 +214,6 @@ public class GameLevel {
         return new PuzzleState(board, rows, cols);
     }
 
-    /**
-     * Generate puzzle dengan tingkat kesulitan tertentu
-     */
-    public PuzzleState generatePuzzleWithDifficulty(int minMoves) {
-        PuzzleState current = generateGoalState();
-
-        // Menggunakan ArrayList untuk menyimpan visited states
-        // Menggantikan HashSet
-        ArrayList<String> visited = new ArrayList<>();
-        Random random = new Random();
-
-        visited.add(current.getStateKey());
-
-        for (int i = 0; i < minMoves * 2; i++) {
-            List<PuzzleState> neighbors = current.getNeighbors();
-
-            // Filter neighbors yang belum dikunjungi
-            ArrayList<PuzzleState> unvisited = new ArrayList<>();
-            for (PuzzleState n : neighbors) {
-                boolean found = false;
-                String key = n.getStateKey();
-
-                // Linear search di ArrayList (menggantikan HashSet.contains())
-                for (String visitedKey : visited) {
-                    if (visitedKey.equals(key)) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    unvisited.add(n);
-                }
-            }
-
-            if (unvisited.isEmpty()) {
-                current = neighbors.get(random.nextInt(neighbors.size()));
-            } else {
-                current = unvisited.get(random.nextInt(unvisited.size()));
-            }
-
-            visited.add(current.getStateKey());
-        }
-
-        return current;
-    }
-
-    // Game progress methods
     public void incrementMoves() {
         totalMoves++;
     }
@@ -387,15 +246,12 @@ public class GameLevel {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    // Getters
     public Difficulty getCurrentDifficulty() { return currentDifficulty; }
-    public int getCurrentLevelNumber() { return currentLevelNumber; }
+
     public int getTotalMoves() { return totalMoves; }
-    public int getBestScore() { return bestScore; }
-    public long getElapsedTime() { return elapsedTime; }
 
     public String getLevelInfo() {
-        return String.format("Level %d - %s", currentLevelNumber, currentDifficulty.getDescription());
+        return String.format("Level %d - %s", currentLevelNumber, currentDifficulty.description());
     }
 
     public String getScoreInfo() {

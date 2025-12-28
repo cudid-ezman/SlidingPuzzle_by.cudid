@@ -4,18 +4,11 @@ import core.PuzzleState;
 
 import java.util.*;
 
-/**
- * Class untuk merepresentasikan Puzzle sebagai Graph
- * REFACTORED: Mengganti HashMap dan HashSet dengan ArrayList
- */
 public class PuzzleGraph {
 
-    /**
-     * Graph Node dengan Adjacency List
-     */
     public static class GraphNode {
         private final PuzzleState state;
-        private final ArrayList<GraphNode> neighbors; // Adjacency List
+        private final ArrayList<GraphNode> neighbors;
         private boolean visited;
         private int distance;
 
@@ -27,7 +20,6 @@ public class PuzzleGraph {
         }
 
         public void addNeighbor(GraphNode neighbor) {
-            // Cek duplikasi manual
             boolean found = false;
             for (GraphNode n : neighbors) {
                 if (n.getState().getStateKey().equals(neighbor.getState().getStateKey())) {
@@ -42,7 +34,7 @@ public class PuzzleGraph {
 
         public PuzzleState getState() { return state; }
         public ArrayList<GraphNode> getNeighbors() { return neighbors; }
-        public boolean isVisited() { return visited; }
+        public boolean isVisited() { return !visited; }
         public void setVisited(boolean visited) { this.visited = visited; }
         public int getDistance() { return distance; }
         public void setDistance(int distance) { this.distance = distance; }
@@ -55,9 +47,6 @@ public class PuzzleGraph {
         }
     }
 
-    /**
-     * Entry untuk menyimpan node (menggantikan HashMap)
-     */
     private static class NodeEntry {
         String key;
         GraphNode node;
@@ -68,7 +57,6 @@ public class PuzzleGraph {
         }
     }
 
-    // Mengganti HashMap dengan ArrayList
     private final ArrayList<NodeEntry> nodes;
     private int totalNodes;
     private int totalEdges;
@@ -79,30 +67,18 @@ public class PuzzleGraph {
         this.totalEdges = 0;
     }
 
-    /**
-     * Tambah node ke graph
-     * Menggantikan HashMap.put()
-     */
     public GraphNode addNode(PuzzleState state) {
         String key = state.getStateKey();
-
-        // Cari apakah sudah ada (menggantikan HashMap.containsKey())
         GraphNode existing = findNode(key);
         if (existing != null) {
             return existing;
         }
-
-        // Tambah baru
         GraphNode node = new GraphNode(state);
         nodes.add(new NodeEntry(key, node));
         totalNodes++;
         return node;
     }
 
-    /**
-     * Cari node berdasarkan key
-     * Menggantikan HashMap.get()
-     */
     private GraphNode findNode(String key) {
         for (NodeEntry entry : nodes) {
             if (entry.key.equals(key)) {
@@ -112,25 +88,9 @@ public class PuzzleGraph {
         return null;
     }
 
-    /**
-     * Tambah edge antara dua node
-     */
-    public void addEdge(PuzzleState state1, PuzzleState state2) {
-        GraphNode node1 = addNode(state1);
-        GraphNode node2 = addNode(state2);
-
-        node1.addNeighbor(node2);
-        node2.addNeighbor(node1);
-        totalEdges++;
-    }
-
-    /**
-     * Build graph dari initial state dengan BFS
-     * Mengganti HashSet dengan ArrayList untuk visited
-     */
     public void buildGraphBFS(PuzzleState startState, int maxDepth) {
         Queue<GraphNode> queue = new LinkedList<>();
-        ArrayList<String> visited = new ArrayList<>(); // Mengganti HashSet
+        ArrayList<String> visited = new ArrayList<>();
 
         GraphNode startNode = addNode(startState);
         startNode.setDistance(0);
@@ -146,7 +106,6 @@ public class PuzzleGraph {
             for (PuzzleState neighborState : neighborStates) {
                 String key = neighborState.getStateKey();
 
-                // Linear search di ArrayList (menggantikan HashSet.contains())
                 if (!containsKey(visited, key)) {
                     GraphNode neighborNode = addNode(neighborState);
                     current.addNeighbor(neighborNode);
@@ -160,9 +119,6 @@ public class PuzzleGraph {
         }
     }
 
-    /**
-     * Helper method untuk cek contains
-     */
     private boolean containsKey(ArrayList<String> list, String key) {
         for (String item : list) {
             if (item.equals(key)) {
@@ -172,9 +128,6 @@ public class PuzzleGraph {
         return false;
     }
 
-    /**
-     * DFS Traversal menggunakan Stack
-     */
     public List<PuzzleState> findPathDFS(PuzzleState start, PuzzleState goal) {
         resetVisited();
 
@@ -186,7 +139,7 @@ public class PuzzleGraph {
         }
 
         Stack<GraphNode> stack = new Stack<>();
-        ArrayList<ParentEntry> parentList = new ArrayList<>(); // Mengganti HashMap
+        ArrayList<ParentEntry> parentList = new ArrayList<>();
 
         stack.push(startNode);
         startNode.setVisited(true);
@@ -199,7 +152,7 @@ public class PuzzleGraph {
             }
 
             for (GraphNode neighbor : current.getNeighbors()) {
-                if (!neighbor.isVisited()) {
+                if (neighbor.isVisited()) {
                     neighbor.setVisited(true);
                     addParent(parentList, neighbor, current);
                     stack.push(neighbor);
@@ -210,9 +163,6 @@ public class PuzzleGraph {
         return null;
     }
 
-    /**
-     * BFS Traversal menggunakan Queue
-     */
     public List<PuzzleState> findShortestPathBFS(PuzzleState start, PuzzleState goal) {
         resetVisited();
 
@@ -237,7 +187,7 @@ public class PuzzleGraph {
             }
 
             for (GraphNode neighbor : current.getNeighbors()) {
-                if (!neighbor.isVisited()) {
+                if (neighbor.isVisited()) {
                     neighbor.setVisited(true);
                     addParent(parentList, neighbor, current);
                     queue.add(neighbor);
@@ -248,9 +198,6 @@ public class PuzzleGraph {
         return null;
     }
 
-    /**
-     * Entry untuk parent mapping (menggantikan HashMap)
-     */
     private static class ParentEntry {
         GraphNode child;
         GraphNode parent;
@@ -261,16 +208,10 @@ public class PuzzleGraph {
         }
     }
 
-    /**
-     * Add parent relationship (menggantikan HashMap.put())
-     */
     private void addParent(ArrayList<ParentEntry> parentList, GraphNode child, GraphNode parent) {
         parentList.add(new ParentEntry(child, parent));
     }
 
-    /**
-     * Get parent of node (menggantikan HashMap.get())
-     */
     private GraphNode getParent(ArrayList<ParentEntry> parentList, GraphNode child) {
         for (ParentEntry entry : parentList) {
             if (entry.child.equals(child)) {
@@ -280,9 +221,6 @@ public class PuzzleGraph {
         return null;
     }
 
-    /**
-     * Rekonstruksi path
-     */
     private List<PuzzleState> reconstructPath(ArrayList<ParentEntry> parentList,
                                               GraphNode start, GraphNode goal) {
         LinkedList<PuzzleState> path = new LinkedList<>();
@@ -300,23 +238,11 @@ public class PuzzleGraph {
         return path;
     }
 
-    /**
-     * Hitung degree dari sebuah node
-     */
-    public int getNodeDegree(PuzzleState state) {
-        GraphNode node = getNode(state.getStateKey());
-        if (node == null) return 0;
-        return node.getNeighbors().size();
-    }
-
-    /**
-     * Cek apakah graph connected
-     */
     public boolean isConnected() {
         if (nodes.isEmpty()) return true;
 
         resetVisited();
-        GraphNode start = nodes.getFirst().node;
+        GraphNode start = nodes.get(0).node;
 
         Queue<GraphNode> queue = new LinkedList<>();
         queue.add(start);
@@ -327,7 +253,7 @@ public class PuzzleGraph {
             GraphNode current = queue.poll();
 
             for (GraphNode neighbor : current.getNeighbors()) {
-                if (!neighbor.isVisited()) {
+                if (neighbor.isVisited()) {
                     neighbor.setVisited(true);
                     queue.add(neighbor);
                     visitedCount++;
@@ -338,39 +264,23 @@ public class PuzzleGraph {
         return visitedCount == totalNodes;
     }
 
-    /**
-     * Reset visited flag
-     */
     private void resetVisited() {
         for (NodeEntry entry : nodes) {
             entry.node.setVisited(false);
         }
     }
 
-    /**
-     * Get statistics
-     */
     public String getGraphStats() {
-        return String.format("Graph Stats:\n" +
-                        "- Total Nodes: %d\n" +
-                        "- Total Edges: %d\n" +
-                        "- Is Connected: %s\n" +
-                        "- Average Degree: %.2f",
+        return String.format("""
+                        Graph Stats:
+                        - Total Nodes: %d
+                        - Total Edges: %d
+                        - Is Connected: %s
+                        - Average Degree: %.2f""",
                 totalNodes, totalEdges,
                 isConnected() ? "Yes" : "No",
                 totalNodes > 0 ? (totalEdges * 2.0 / totalNodes) : 0);
     }
 
-    // Getters
-    public int getTotalNodes() { return totalNodes; }
-    public int getTotalEdges() { return totalEdges; }
     public GraphNode getNode(String stateKey) { return findNode(stateKey); }
-
-    public ArrayList<GraphNode> getAllNodes() {
-        ArrayList<GraphNode> allNodes = new ArrayList<>();
-        for (NodeEntry entry : nodes) {
-            allNodes.add(entry.node);
-        }
-        return allNodes;
-    }
 }

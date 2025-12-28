@@ -13,10 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 
-/**
- * Main class untuk Sliding Puzzle Game
- * Game dengan multiple level dan fitur lengkap
- */
 public class PuzzleGame extends JFrame {
 
     private JPanel gridPanel;
@@ -45,21 +41,12 @@ public class PuzzleGame extends JFrame {
     }
 
     private void initializeGame(GameLevel.Difficulty difficulty) {
-        // Initialize game components
         gameLevel = new GameLevel(difficulty);
         moveHistory = new MoveHistory(100);
 
-        // Generate initial and goal states
         currentState = gameLevel.generateInitialState();
         goalState = gameLevel.generateGoalState();
 
-        // Initialize both solvers
-        // Regular solver
-        PuzzleSolver solver = new PuzzleSolver(goalState);
-        // Fast solver
-        OptimizedPuzzleSolver optimizedSolver = new OptimizedPuzzleSolver(goalState);
-
-        // Setup UI
         setupUI();
         updateBoard();
         startGameTimer();
@@ -73,20 +60,16 @@ public class PuzzleGame extends JFrame {
 
         System.out.println("[UI] Setting up UI for " + gameLevel.getLevelInfo());
 
-        // Main container
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBackground(BG_COLOR);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Info Panel (Top)
         createInfoPanel();
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        // Grid Panel (Center)
         createGridPanel();
         mainPanel.add(gridPanel, BorderLayout.CENTER);
 
-        // Control Panel (Bottom)
         createControlPanel();
         mainPanel.add(controlPanel, BorderLayout.SOUTH);
 
@@ -94,7 +77,6 @@ public class PuzzleGame extends JFrame {
         pack();
         setLocationRelativeTo(null);
 
-        // Update info setelah UI ready
         updateInfo();
         System.out.println("[UI] UI setup complete");
     }
@@ -118,8 +100,8 @@ public class PuzzleGame extends JFrame {
     }
 
     private void createGridPanel() {
-        int rows = gameLevel.getCurrentDifficulty().getRows();
-        int cols = gameLevel.getCurrentDifficulty().getCols();
+        int rows = gameLevel.getCurrentDifficulty().rows();
+        int cols = gameLevel.getCurrentDifficulty().cols();
 
         gridPanel = new JPanel(new GridLayout(rows, cols, 3, 3));
         gridPanel.setBackground(Color.DARK_GRAY);
@@ -132,12 +114,8 @@ public class PuzzleGame extends JFrame {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 int value = currentState.getValueAt(i, j);
-                Point position = new Point(i, j);
 
-                // Cari original position dari value ini
-                Point originalPosition = findOriginalPosition(value);
-
-                PuzzleButton btn = new PuzzleButton(value, position, originalPosition);
+                PuzzleButton btn = new PuzzleButton(value);
                 btn.setPreferredSize(buttonSize);
 
                 final int row = i;
@@ -155,22 +133,19 @@ public class PuzzleGame extends JFrame {
         controlPanel = new JPanel(new GridLayout(3, 3, 5, 5));
         controlPanel.setBackground(BG_COLOR);
 
-        // Row 1: Game controls
         JButton newGameBtn = createButton("New Game", new Color(52, 152, 219));
         JButton undoBtn = createButton("Undo", new Color(155, 89, 182));
         JButton hintBtn = createButton("Hint", new Color(241, 196, 15));
 
-        // Row 2: Difficulty selection
         JButton easyBtn = createButton("Easy 3x3", new Color(46, 204, 113));
         JButton mediumBtn = createButton("Medium 4x3", new Color(230, 126, 34));
         JButton hardBtn = createButton("Hard 4x4", new Color(231, 76, 60));
 
-        // Row 3: Special features
         JButton autoSolveBtn = createButton("Auto Solve", new Color(52, 73, 94));
         JButton loadImageBtn = createButton("Load Image", new Color(26, 188, 156));
         JButton exitBtn = createButton("Exit", new Color(189, 195, 199));
 
-        // Add action listeners
+        
         newGameBtn.addActionListener(e -> newGame());
         undoBtn.addActionListener(e -> undoMove());
         hintBtn.addActionListener(e -> showHint());
@@ -183,7 +158,6 @@ public class PuzzleGame extends JFrame {
         loadImageBtn.addActionListener(e -> loadImage());
         exitBtn.addActionListener(e -> System.exit(0));
 
-        // Add buttons to panel
         controlPanel.add(newGameBtn);
         controlPanel.add(undoBtn);
         controlPanel.add(hintBtn);
@@ -210,7 +184,6 @@ public class PuzzleGame extends JFrame {
         int emptyRow = emptyPos.x;
         int emptyCol = emptyPos.y;
 
-        // Check if clicked tile is adjacent to empty
         boolean canMove = (Math.abs(row - emptyRow) == 1 && col == emptyCol) ||
                 (Math.abs(col - emptyCol) == 1 && row == emptyRow);
 
@@ -218,30 +191,26 @@ public class PuzzleGame extends JFrame {
             return;
         }
 
-        // Save current state to history
         moveHistory.push(currentState);
 
-        // Create new state with swapped tiles
         int[][] newBoard = copyBoard(currentState.getBoard());
         newBoard[emptyRow][emptyCol] = newBoard[row][col];
         newBoard[row][col] = 0;
 
         currentState = new PuzzleState(newBoard,
-                gameLevel.getCurrentDifficulty().getRows(),
-                gameLevel.getCurrentDifficulty().getCols());
+                gameLevel.getCurrentDifficulty().rows(),
+                gameLevel.getCurrentDifficulty().cols());
 
-        // Update game state
         gameLevel.incrementMoves();
         updateBoard();
         updateInfo();
 
-        // Check if won
         checkWin();
     }
 
     private void updateBoard() {
-        int rows = gameLevel.getCurrentDifficulty().getRows();
-        int cols = gameLevel.getCurrentDifficulty().getCols();
+        int rows = gameLevel.getCurrentDifficulty().rows();
+        int cols = gameLevel.getCurrentDifficulty().cols();
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -257,8 +226,6 @@ public class PuzzleGame extends JFrame {
                 } else {
                     buttons[i][j].setValue(value, value == 0 ? "" : String.valueOf(value));
                 }
-
-                buttons[i][j].setPosition(new Point(i, j));
             }
         }
     }
@@ -310,7 +277,6 @@ public class PuzzleGame extends JFrame {
         if (moveHistory.canUndo()) {
             currentState = moveHistory.pop();
             updateBoard();
-            // Don't decrement moves for undo
             updateInfo();
         } else {
             JOptionPane.showMessageDialog(this, "No moves to undo!", "Undo", JOptionPane.INFORMATION_MESSAGE);
@@ -320,14 +286,12 @@ public class PuzzleGame extends JFrame {
     private void showHint() {
         System.out.println("[HINT] Starting hint calculation...");
 
-        // Use simple solver (more reliable)
         SimpleSolver.showHint(this, currentState, goalState);
     }
 
     private void autoSolve() {
         System.out.println("[AUTO SOLVE] Starting auto solve...");
 
-        // Use simple solver with callback
         SimpleSolver.autoSolve(this, currentState, goalState, solution -> {
             System.out.println("[AUTO SOLVE] Starting animation...");
             gameTimer.stop();
@@ -357,7 +321,7 @@ public class PuzzleGame extends JFrame {
     }
 
     private void changeDifficulty(GameLevel.Difficulty newDifficulty) {
-        System.out.println("[LEVEL] Changing difficulty to: " + newDifficulty.getName());
+        System.out.println("[LEVEL] Changing difficulty to: " + newDifficulty.name());
 
         if (newDifficulty.equals(gameLevel.getCurrentDifficulty())) {
             System.out.println("[LEVEL] Same difficulty, starting new game...");
@@ -365,13 +329,11 @@ public class PuzzleGame extends JFrame {
             return;
         }
 
-        // Stop timer dulu
         if (gameTimer != null) {
             gameTimer.stop();
             System.out.println("[LEVEL] Timer stopped");
         }
 
-        // Show loading
         System.out.println("[LEVEL] Rebuilding UI...");
 
         getContentPane().removeAll();
@@ -395,8 +357,8 @@ public class PuzzleGame extends JFrame {
                 BufferedImage original = ImageIO.read(file);
 
                 int size = TILE_SIZE * Math.max(
-                        gameLevel.getCurrentDifficulty().getRows(),
-                        gameLevel.getCurrentDifficulty().getCols());
+                        gameLevel.getCurrentDifficulty().rows(),
+                        gameLevel.getCurrentDifficulty().cols());
 
                 puzzleImage = resizeImage(original, size, size);
                 useImage = true;
@@ -421,8 +383,8 @@ public class PuzzleGame extends JFrame {
     }
 
     private Image createTileImage(int tileIndex) {
-        int rows = gameLevel.getCurrentDifficulty().getRows();
-        int cols = gameLevel.getCurrentDifficulty().getCols();
+        int rows = gameLevel.getCurrentDifficulty().rows();
+        int cols = gameLevel.getCurrentDifficulty().cols();
 
         int row = tileIndex / cols;
         int col = tileIndex % cols;
@@ -446,18 +408,6 @@ public class PuzzleGame extends JFrame {
             timeLabel.setText("Time: " + gameLevel.getFormattedTime());
         });
         gameTimer.start();
-    }
-
-    private Point findOriginalPosition(int value) {
-        int rows = gameLevel.getCurrentDifficulty().getRows();
-        int cols = gameLevel.getCurrentDifficulty().getCols();
-
-        if (value == 0) {
-            return new Point(rows - 1, cols - 1);
-        }
-
-        int index = value - 1;
-        return new Point(index / cols, index % cols);
     }
 
     private int[][] copyBoard(int[][] board) {
