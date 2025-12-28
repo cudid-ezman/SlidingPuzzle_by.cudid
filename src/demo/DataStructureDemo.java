@@ -7,10 +7,7 @@ import datastructures.PuzzleTree;
 
 import java.util.List;
 
-/**
- * Demo class dengan visualisasi detail
- * Menunjukkan proses BFS/DFS dan struktur Graph/Tree
- */
+@SuppressWarnings("ALL")
 public class DataStructureDemo {
 
     public static void main(String[] args) {
@@ -18,7 +15,6 @@ public class DataStructureDemo {
         System.out.println("║" + center("SLIDING PUZZLE - DATA STRUCTURE DEMO") + "║");
         System.out.println("╚" + repeat("═") + "╝\n");
 
-        // Setup puzzle - lebih sederhana untuk demo
         int[][] startBoard = {
                 {1, 2, 3},
                 {4, 0, 5},
@@ -34,7 +30,7 @@ public class DataStructureDemo {
         PuzzleState startState = new PuzzleState(startBoard, 3, 3);
         PuzzleState goalState = new PuzzleState(goalBoard, 3, 3);
 
-        System.out.println("📋 Initial Configuration:");
+        System.out.println(" Initial Configuration:");
         System.out.println(repeat("─"));
         System.out.println("Start State:");
         printBoardDemo(startBoard);
@@ -42,17 +38,16 @@ public class DataStructureDemo {
         printBoardDemo(goalBoard);
         System.out.println(repeat("─") + "\n");
 
-        // Demo menu
         demoMenu(startState, goalState);
     }
 
     private static void demoMenu(PuzzleState start, PuzzleState goal) {
-        System.out.println("📚 Available Demos:");
+        System.out.println(" Available Demos:");
         System.out.println("1. Tree Structure & Traversals");
         System.out.println("2. Graph Structure & Pathfinding");
         System.out.println("3. BFS vs DFS Comparison");
         System.out.println("4. Complete Solution Visualization");
-        System.out.println("\n🚀 Running all demos...\n");
+        System.out.println("\n Running all demos...\n");
 
         pause();
         demoTreeStructure(start, goal);
@@ -67,37 +62,32 @@ public class DataStructureDemo {
         demoCompleteSolution(start, goal);
     }
 
-    /**
-     * Demo Tree Structure dengan visualisasi
-     */
     private static void demoTreeStructure(PuzzleState start, PuzzleState goal) {
         System.out.println("╔" + repeat("═") + "╗");
         System.out.println("║" + center("DEMO 1: TREE STRUCTURE") + "║");
         System.out.println("╚" + repeat("═") + "╝\n");
 
-        System.out.println("🌳 Building Solution Tree using BFS...\n");
+        System.out.println(" Building Solution Tree using BFS...\n");
 
-        // Solve puzzle untuk dapat solution path
         OptimizedPuzzleSolver solver = new OptimizedPuzzleSolver(goal);
-        solver.setVerboseMode(false); // Matikan verbose untuk demo
+        solver.setVerboseMode(false);
 
-        System.out.println("📍 Solving puzzle...");
+        System.out.println(" Solving puzzle...");
         List<PuzzleState> solution = solver.solveBFSOptimized(start);
 
         if (solution == null) {
-            System.out.println("❌ No solution found!");
+            System.out.println(" No solution found!");
             return;
         }
 
-        System.out.println("\n✅ Solution found! Building tree...\n");
+        System.out.println("\n Solution found! Building tree...\n");
 
-        // Build tree dari solution
         PuzzleTree tree = new PuzzleTree(start);
         tree.buildFromSolutionPath(solution);
 
-        System.out.println("📊 " + tree.getTreeStats());
+        System.out.println(" " + tree.getTreeStats());
 
-        System.out.println("\n🛤️  Solution Path Visualization:");
+        System.out.println("\n  Solution Path Visualization:");
         System.out.println(repeat("─"));
 
         List<PuzzleTree.TreeNode> path = tree.getRoot().getPathFromRoot();
@@ -105,9 +95,9 @@ public class DataStructureDemo {
             PuzzleTree.TreeNode node = path.get(i);
 
             if (i == 0) {
-                System.out.println("\n🏁 START");
+                System.out.println("\n START");
             } else {
-                System.out.println("\n➡️  " + node.getMoveFromParent() + " (Depth: " + node.getDepth() + ")");
+                System.out.println("\n" + node.getMoveFromParent() + " (Depth: " + node.getDepth() + ")");
             }
 
             printBoardDemo(node.getState().getBoard());
@@ -117,10 +107,9 @@ public class DataStructureDemo {
             }
         }
 
-        System.out.println("\n🎯 GOAL REACHED!\n");
+        System.out.println("\n GOAL REACHED!\n");
 
-        // Demo Tree Traversals
-        System.out.println("🔍 Tree Traversal Methods:");
+        System.out.println(" Tree Traversal Methods:");
         System.out.println(repeat("─"));
         System.out.println("├─ Pre-order nodes: " + tree.preOrderTraversal().size());
         System.out.println("├─ Post-order nodes: " + tree.postOrderTraversal().size());
@@ -129,37 +118,32 @@ public class DataStructureDemo {
         System.out.println();
     }
 
-    /**
-     * Demo Graph Structure dengan visualisasi pathfinding
-     */
     private static void demoGraphStructure(PuzzleState start, PuzzleState goal) {
         System.out.println("╔" + repeat("═") + "╗");
         System.out.println("║" + center("DEMO 2: GRAPH STRUCTURE") + "║");
         System.out.println("╚" + repeat("═") + "╝\n");
 
-        System.out.println("🕸️  Building Puzzle State Graph...\n");
+        System.out.println("  Building Puzzle State Graph...\n");
 
-        // Build graph dengan max depth 4
         PuzzleGraph graph = new PuzzleGraph();
 
-        System.out.println("📊 Building graph (depth 4)...");
+        System.out.println(" Building graph (depth 4)...");
         graph.buildGraphBFS(start, 4);
 
         System.out.println("\n" + graph.getGraphStats());
 
-        // Demo BFS path finding dengan visualisasi
-        System.out.println("\n🔍 BFS Pathfinding:");
+        System.out.println("\n BFS Pathfinding:");
         System.out.println(repeat("─"));
 
         List<PuzzleState> bfsPath = graph.findShortestPathBFS(start, goal);
         if (bfsPath != null) {
-            System.out.println("✅ BFS found path with " + (bfsPath.size() - 1) + " moves\n");
+            System.out.println(" BFS found path with " + (bfsPath.size() - 1) + " moves\n");
 
             for (int i = 0; i < bfsPath.size(); i++) {
                 if (i == 0) {
-                    System.out.println("🏁 START (Node " + i + ")");
+                    System.out.println(" START (Node " + i + ")");
                 } else {
-                    System.out.println("\n➡️  " + bfsPath.get(i).getMoveDescription() + " (Node " + i + ")");
+                    System.out.println("\n  " + bfsPath.get(i).getMoveDescription() + " (Node " + i + ")");
                 }
                 printBoardDemo(bfsPath.get(i).getBoard());
 
@@ -167,13 +151,13 @@ public class DataStructureDemo {
                     System.out.println("    ↓");
                 }
             }
-            System.out.println("\n🎯 GOAL!");
+            System.out.println("\n GOAL!");
         } else {
-            System.out.println("❌ Goal not reachable in graph (increase max depth)");
+            System.out.println(" Goal not reachable in graph (increase max depth)");
         }
 
         // Node degree analysis
-        System.out.println("\n📈 Graph Analysis:");
+        System.out.println("\n Graph Analysis:");
         System.out.println(repeat("─"));
         PuzzleGraph.GraphNode startNode = graph.getNode(start.getStateKey());
         if (startNode != null) {
@@ -183,9 +167,6 @@ public class DataStructureDemo {
         System.out.println();
     }
 
-    /**
-     * Demo BFS vs DFS dengan visualisasi
-     */
     private static void demoBFSvsDFS(PuzzleState start, PuzzleState goal) {
         System.out.println("╔" + repeat("═") + "╗");
         System.out.println("║" + center("DEMO 3: BFS vs DFS COMPARISON") + "║");
@@ -194,17 +175,17 @@ public class DataStructureDemo {
         PuzzleGraph graph = new PuzzleGraph();
         graph.buildGraphBFS(start, 5);
 
-        System.out.println("🔍 Running BFS...");
+        System.out.println(" Running BFS...");
         long bfsStart = System.currentTimeMillis();
         List<PuzzleState> bfsPath = graph.findShortestPathBFS(start, goal);
         long bfsTime = System.currentTimeMillis() - bfsStart;
 
-        System.out.println("🔍 Running DFS...");
+        System.out.println(" Running DFS...");
         long dfsStart = System.currentTimeMillis();
         List<PuzzleState> dfsPath = graph.findPathDFS(start, goal);
         long dfsTime = System.currentTimeMillis() - dfsStart;
 
-        System.out.println("\n📊 Comparison Results:");
+        System.out.println("\n Comparison Results:");
         System.out.println(repeat("─"));
         System.out.println("│ Algorithm │ Path Length │ Time (ms) │ Optimal? │");
         System.out.println("├───────────┼─────────────┼───────────┼──────────┤");
@@ -218,32 +199,24 @@ public class DataStructureDemo {
                 "✗ No");
         System.out.println("└───────────┴─────────────┴───────────┴──────────┘\n");
 
-        System.out.println("💡 Key Insights:");
+        System.out.println(" Key Insights:");
         System.out.println("  • BFS guarantees shortest path (optimal)");
         System.out.println("  • DFS is faster but may find longer path");
         System.out.println("  • For puzzles, BFS is preferred\n");
     }
 
-    /**
-     * Demo Complete Solution dengan step-by-step
-     */
     private static void demoCompleteSolution(PuzzleState start, PuzzleState goal) {
         System.out.println("╔" + repeat("═") + "╗");
         System.out.println("║" + center("DEMO 4: COMPLETE SOLUTION VISUALIZATION") + "║");
         System.out.println("╚" + repeat("═") + "╝\n");
 
         OptimizedPuzzleSolver solver = new OptimizedPuzzleSolver(goal);
-        solver.setVerboseMode(true); // Enable detailed logging
+        solver.setVerboseMode(true);
 
-        // Ini akan menampilkan proses pencarian detail
-        List<PuzzleState> solution = solver.solveBFSOptimized(start);
+        solver.solveBFSOptimized(start);
     }
 
-    // ========== HELPER METHODS ==========
 
-    /**
-     * Print board dengan format yang rapi
-     */
     private static void printBoardDemo(int[][] board) {
         System.out.print("    ");
         for (int i = 0; i < board.length; i++) {
@@ -261,10 +234,6 @@ public class DataStructureDemo {
         System.out.println();
     }
 
-    /**
-     * Center text untuk header
-     * Compatible dengan Java 8+
-     */
     private static String center(String text) {
         if (text.length() >= 70) {
             return text;
@@ -273,41 +242,30 @@ public class DataStructureDemo {
         int padding = (70 - text.length()) / 2;
         StringBuilder sb = new StringBuilder();
 
-        // Left padding
         sb.append(" ".repeat(padding));
 
         sb.append(text);
 
-        // Right padding
         int rightPadding = 70 - text.length() - padding;
         sb.append(" ".repeat(Math.max(0, rightPadding)));
 
         return sb.toString();
     }
 
-    /**
-     * Create repeated string (replacement untuk String.repeat())
-     * Compatible dengan Java 8+
-     */
     private static String repeat(String str) {
         return String.valueOf(str).repeat(70);
     }
 
-    /**
-     * Pause untuk user bisa baca
-     */
     private static void pause() {
         System.out.println("\n" + repeat("─"));
         System.out.println("Press Enter to continue to next demo...");
         System.out.println(repeat("─") + "\n");
         try {
-            // Clear input buffer
             while (System.in.available() > 0) {
                 System.in.read();
             }
             System.in.read();
         } catch (Exception e) {
-            // Ignore
         }
     }
 }

@@ -4,19 +4,13 @@ import core.PuzzleState;
 
 import java.util.*;
 
-/**
- * Class untuk merepresentasikan Puzzle Solution sebagai Tree
- * REFACTORED: Mengganti HashMap dengan ArrayList
- */
+@SuppressWarnings("ALL")
 public class PuzzleTree {
 
-    /**
-     * Tree Node
-     */
     public static class TreeNode {
         private final PuzzleState state;
         private TreeNode parent;
-        private final ArrayList<TreeNode> children; // Menggunakan ArrayList
+        private final ArrayList<TreeNode> children;
         private int depth;
         private final String moveFromParent;
 
@@ -45,10 +39,6 @@ public class PuzzleTree {
             return children.isEmpty();
         }
 
-        public boolean isRoot() {
-            return parent == null;
-        }
-
         public List<TreeNode> getPathFromRoot() {
             LinkedList<TreeNode> path = new LinkedList<>();
             TreeNode current = this;
@@ -61,34 +51,17 @@ public class PuzzleTree {
             return path;
         }
 
-        public List<TreeNode> getSiblings() {
-            if (parent == null) {
-                return new ArrayList<>();
-            }
-
-            ArrayList<TreeNode> siblings = new ArrayList<>();
-            for (TreeNode sibling : parent.children) {
-                if (sibling != this) {
-                    siblings.add(sibling);
-                }
-            }
-            return siblings;
-        }
-
-        // Getters
         public PuzzleState getState() { return state; }
-        public TreeNode getParent() { return parent; }
-        public ArrayList<TreeNode> getChildren() { return children; }
+
         public int getDepth() { return depth; }
         public String getMoveFromParent() { return moveFromParent; }
         public int getChildrenCount() { return children.size(); }
     }
 
-    /**
-     * Entry untuk node mapping (menggantikan HashMap)
-     */
     private static class NodeMapEntry {
+        @SuppressWarnings("unused")
         String key;
+        @SuppressWarnings("unused")
         TreeNode node;
 
         NodeMapEntry(String key, TreeNode node) {
@@ -100,7 +73,7 @@ public class PuzzleTree {
     private final TreeNode root;
     private int totalNodes;
     private int maxDepth;
-    private final ArrayList<NodeMapEntry> nodeMap; // Mengganti HashMap
+    private final ArrayList<NodeMapEntry> nodeMap;
 
     public PuzzleTree(PuzzleState rootState) {
         this.root = new TreeNode(rootState);
@@ -110,28 +83,10 @@ public class PuzzleTree {
         addToMap(rootState.getStateKey(), root);
     }
 
-    /**
-     * Add node ke map (menggantikan HashMap.put())
-     */
     private void addToMap(String key, TreeNode node) {
         nodeMap.add(new NodeMapEntry(key, node));
     }
 
-    /**
-     * Find node by key (menggantikan HashMap.get())
-     */
-    public TreeNode findNode(String stateKey) {
-        for (NodeMapEntry entry : nodeMap) {
-            if (entry.key.equals(stateKey)) {
-                return entry.node;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Build tree dari solution path
-     */
     public void buildFromSolutionPath(List<PuzzleState> solutionPath) {
         if (solutionPath == null || solutionPath.isEmpty()) {
             return;
@@ -153,13 +108,9 @@ public class PuzzleTree {
         }
     }
 
-    /**
-     * Build complete decision tree dengan BFS
-     * Mengganti HashSet dengan ArrayList
-     */
     public void buildCompleteTree(int maxDepth) {
         Queue<TreeNode> queue = new LinkedList<>();
-        ArrayList<String> visited = new ArrayList<>(); // Mengganti HashSet
+        ArrayList<String> visited = new ArrayList<>();
 
         queue.add(root);
         visited.add(root.getState().getStateKey());
@@ -181,7 +132,6 @@ public class PuzzleTree {
                 current.addChild(child);
                 totalNodes++;
 
-                // Linear search (menggantikan HashSet.contains())
                 if (!containsKey(visited, key)) {
                     visited.add(key);
                     queue.add(child);
@@ -192,9 +142,6 @@ public class PuzzleTree {
         }
     }
 
-    /**
-     * Helper untuk cek contains
-     */
     private boolean containsKey(ArrayList<String> list, String key) {
         for (String item : list) {
             if (item.equals(key)) {
@@ -204,9 +151,6 @@ public class PuzzleTree {
         return false;
     }
 
-    /**
-     * Pre-order Traversal
-     */
     public List<TreeNode> preOrderTraversal() {
         ArrayList<TreeNode> result = new ArrayList<>();
         preOrderHelper(root, result);
@@ -222,9 +166,6 @@ public class PuzzleTree {
         }
     }
 
-    /**
-     * Post-order Traversal
-     */
     public List<TreeNode> postOrderTraversal() {
         ArrayList<TreeNode> result = new ArrayList<>();
         postOrderHelper(root, result);
@@ -240,9 +181,6 @@ public class PuzzleTree {
         result.add(node);
     }
 
-    /**
-     * Level-order Traversal (BFS)
-     */
     public List<List<TreeNode>> levelOrderTraversal() {
         ArrayList<List<TreeNode>> result = new ArrayList<>();
         if (root == null) return result;
@@ -268,9 +206,6 @@ public class PuzzleTree {
         return result;
     }
 
-    /**
-     * Get all leaf nodes
-     */
     public List<TreeNode> getLeafNodes() {
         ArrayList<TreeNode> leaves = new ArrayList<>();
         collectLeaves(root, leaves);
@@ -289,9 +224,6 @@ public class PuzzleTree {
         }
     }
 
-    /**
-     * Get nodes at specific depth
-     */
     public List<TreeNode> getNodesAtDepth(int depth) {
         ArrayList<TreeNode> nodes = new ArrayList<>();
         collectNodesAtDepth(root, depth, nodes);
@@ -310,16 +242,10 @@ public class PuzzleTree {
         }
     }
 
-    /**
-     * Calculate tree height
-     */
     public int getHeight() {
         return maxDepth;
     }
 
-    /**
-     * Get branching factor
-     */
     public double getAverageBranchingFactor() {
         if (totalNodes <= 1) return 0;
 
@@ -337,9 +263,6 @@ public class PuzzleTree {
         return nonLeafNodes == 0 ? 0 : (double) totalChildren / nonLeafNodes;
     }
 
-    /**
-     * Print tree structure
-     */
     public String getTreeStructure() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== PUZZLE SOLUTION TREE ===\n");
@@ -363,22 +286,19 @@ public class PuzzleTree {
         }
     }
 
-    /**
-     * Get tree statistics
-     */
     public String getTreeStats() {
-        return String.format("Tree Statistics:\n" +
-                        "- Total Nodes: %d\n" +
-                        "- Max Depth (Height): %d\n" +
-                        "- Leaf Nodes: %d\n" +
-                        "- Avg Branching Factor: %.2f\n" +
-                        "- Root State: %s",
+        return String.format("""
+                        Tree Statistics:
+                        - Total Nodes: %d
+                        - Max Depth (Height): %d
+                        - Leaf Nodes: %d
+                        - Avg Branching Factor: %.2f
+                        - Root State: %s""",
                 totalNodes, maxDepth, getLeafNodes().size(),
                 getAverageBranchingFactor(),
                 root.getState().getStateKey());
     }
 
-    // Getters
     public TreeNode getRoot() { return root; }
     public int getTotalNodes() { return totalNodes; }
     public int getMaxDepth() { return maxDepth; }

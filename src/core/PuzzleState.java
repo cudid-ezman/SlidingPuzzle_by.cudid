@@ -4,10 +4,6 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Class untuk merepresentasikan state/kondisi puzzle
- * Menggunakan struktur data: Array 2D, List, String
- */
 public class PuzzleState {
     private final int[][] board;
     private Point emptyPosition;
@@ -22,12 +18,10 @@ public class PuzzleState {
         this.cols = cols;
         this.board = new int[rows][cols];
 
-        // Deep copy board
         for (int i = 0; i < rows; i++) {
             System.arraycopy(board[i], 0, this.board[i], 0, cols);
         }
 
-        // Find empty position (represented by 0)
         findEmptyPosition();
         this.stateKey = generateStateKey();
     }
@@ -59,9 +53,6 @@ public class PuzzleState {
         return sb.toString();
     }
 
-    /**
-     * Generate tetangga/neighbors menggunakan ArrayList
-     */
     public List<PuzzleState> getNeighbors() {
         List<PuzzleState> neighbors = new ArrayList<>();
 
@@ -77,7 +68,6 @@ public class PuzzleState {
 
             if (isValidPosition(newRow, newCol)) {
                 int[][] newBoard = copyBoard();
-                // Swap
                 newBoard[emptyRow][emptyCol] = newBoard[newRow][newCol];
                 newBoard[newRow][newCol] = 0;
 
@@ -100,9 +90,6 @@ public class PuzzleState {
         return copy;
     }
 
-    /**
-     * Hitung jumlah inversion untuk mengecek solvability
-     */
     public int countInversions() {
         int[] flatArray = new int[rows * cols - 1]; // exclude 0
         int idx = 0;
@@ -127,20 +114,22 @@ public class PuzzleState {
         return inversions;
     }
 
-    /**
-     * Cek apakah puzzle solvable (inversion genap)
-     */
     public boolean isSolvable() {
-        return countInversions() % 2 == 0;
+        int inversions = countInversions();
+        int cols = this.cols;
+        
+        if (cols % 2 == 1) {
+            return inversions % 2 == 0;
+        } else {
+            int blankRow = emptyPosition.x;
+            int blankRowFromBottom = rows - blankRow;
+            return (inversions + blankRowFromBottom) % 2 == 1;
+        }
     }
 
-    /**
-     * Perbaiki puzzle jika tidak solvable
-     */
     public void makeItSolvable() {
         if (isSolvable()) return;
 
-        // Swap dua angka non-zero pertama
         outerLoop:
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -162,7 +151,6 @@ public class PuzzleState {
         this.stateKey = generateStateKey();
     }
 
-    // Getters
     public int[][] getBoard() { return board; }
     public Point getEmptyPosition() { return emptyPosition; }
     public String getStateKey() { return stateKey; }

@@ -1,40 +1,25 @@
 package core;
 
-import java.util.Stack;
+import java.util.Deque;
+import java.util.ArrayDeque;
 
-/**
- * Class untuk menyimpan history gerakan menggunakan Stack
- * Fitur: Undo dengan LIFO (Last In First Out)
- */
 public class MoveHistory {
 
-    private final Stack<PuzzleState> history;
+    private final Deque<PuzzleState> history;
     private final int maxHistorySize;
 
-    public MoveHistory() {
-        this.history = new Stack<>();
-        this.maxHistorySize = 1000; // Batasi ukuran history
-    }
-
     public MoveHistory(int maxSize) {
-        this.history = new Stack<>();
+        this.history = new ArrayDeque<>();
         this.maxHistorySize = maxSize;
     }
 
-    /**
-     * Simpan state ke history
-     */
     public void push(PuzzleState state) {
-        // Jika sudah penuh, hapus yang paling lama (bottom of stack)
         if (history.size() >= maxHistorySize) {
             history.removeFirst();
         }
         history.push(state);
     }
 
-    /**
-     * Ambil state terakhir dari history (UNDO)
-     */
     public PuzzleState pop() {
         if (isEmpty()) {
             return null;
@@ -42,48 +27,15 @@ public class MoveHistory {
         return history.pop();
     }
 
-    /**
-     * Lihat state terakhir tanpa menghapus
-     */
-    public PuzzleState peek() {
-        if (isEmpty()) {
-            return null;
-        }
-        return history.peek();
-    }
-
-    /**
-     * Cek apakah history kosong
-     */
     public boolean isEmpty() {
         return history.isEmpty();
     }
 
-    /**
-     * Dapatkan ukuran history
-     */
-    public int size() {
-        return history.size();
-    }
-
-    /**
-     * Clear semua history
-     */
     public void clear() {
         history.clear();
     }
 
-    /**
-     * Cek apakah bisa undo
-     */
     public boolean canUndo() {
         return !isEmpty();
-    }
-
-    /**
-     * Get jumlah undo yang tersisa
-     */
-    public int getRemainingUndos() {
-        return history.size();
     }
 }
