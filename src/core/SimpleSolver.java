@@ -29,7 +29,6 @@ public class SimpleSolver {
 
         try {
             OptimizedPuzzleSolver solver = new OptimizedPuzzleSolver(goalState);
-            solver.setVerboseMode(true);
             solver.setMaxIterations(2000000);
 
             System.out.println("[" + actionType + "] Starting BFS solver...");

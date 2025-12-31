@@ -58,141 +58,56 @@ public class GameLevel {
         bestScores.add(new ScoreEntry(difficulty, score));
     }
 
-    public PuzzleState generateInitialState() {
+   public PuzzleState generateInitialState() {
+        // 1. AMBIL UKURAN DARI DIFFICULTY (Agar variable rows & cols dikenali)
+        int rows = currentDifficulty.rows();
+        int cols = currentDifficulty.cols();
 
-        int minMovesFromGoal;
-        int maxScrambleMoves;
+        System.out.println("[LEVEL] Generating puzzle with Random Walk...");
 
+        // 2. Mulai dari Goal State
+        PuzzleState current = generateGoalState();
+        PuzzleState previous = null;
+        
+        // 3. Tentukan jumlah langkah acak berdasarkan kesulitan
+        int scrambleSteps;
         if (currentDifficulty.equals(Difficulty.EASY)) {
-            minMovesFromGoal = 8;
-            maxScrambleMoves = 15;
+            scrambleSteps = 15;
         } else if (currentDifficulty.equals(Difficulty.MEDIUM)) {
-            minMovesFromGoal = 10;
-            maxScrambleMoves = 20;
+            scrambleSteps = 30;
         } else {
-            minMovesFromGoal = 12;
-            maxScrambleMoves = 25;
+            scrambleSteps = 50; // HARD
         }
 
-        System.out.println("[LEVEL] Generating puzzle...");
-        System.out.println("[LEVEL] Target minimum moves from goal: " + minMovesFromGoal);
-        System.out.println("[LEVEL] Difficulty: " + currentDifficulty.description());
+        System.out.println("[LEVEL] Scrambling " + scrambleSteps + " steps...");
 
-        PuzzleState bestState = null;
-        int bestDistance = 0;
-        int maxAttempts = 20;
+        // 4. Lakukan Pengacakan (Random Walk)
+        for (int i = 0; i < scrambleSteps; i++) {
+            List<PuzzleState> neighbors = current.getNeighbors();
+            List<PuzzleState> candidates = new ArrayList<>();
 
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            PuzzleState state = generateGoalState();
-            PuzzleState prevState = null;
-
-            int scrambleMoves = minMovesFromGoal + (int)(Math.random() * (maxScrambleMoves - minMovesFromGoal));
-
-            for (int i = 0; i < scrambleMoves; i++) {
-                List<PuzzleState> neighbors = state.getNeighbors();
-
-                ArrayList<PuzzleState> validMoves = new ArrayList<>();
-                for (PuzzleState neighbor : neighbors) {
-                    if (prevState == null ||
-                            !neighbor.getStateKey().equals(prevState.getStateKey())) {
-                        validMoves.add(neighbor);
-                    }
-                }
-
-                if (!validMoves.isEmpty()) {
-                    prevState = state;
-                    int randomIndex = (int)(Math.random() * validMoves.size());
-                    state = validMoves.get(randomIndex);
+            for (PuzzleState neighbor : neighbors) {
+                // Cegah gerak maju-mundur (jangan balik ke state sebelumnya)
+                if (previous == null || !neighbor.getStateKey().equals(previous.getStateKey())) {
+                    candidates.add(neighbor);
                 }
             }
 
-            if (!state.isSolvable()) {
-                continue;
-            }
-
-            PuzzleState goalState = generateGoalState();
-            if (state.getStateKey().equals(goalState.getStateKey())) {
-                continue;
-            }
-
-            int misplacedTiles = countMisplacedTiles(state);
-
-            if (misplacedTiles >= minMovesFromGoal / 2) {
-                if (misplacedTiles > bestDistance) {
-                    bestState = state;
-                    bestDistance = misplacedTiles;
-                }
-
-                if (misplacedTiles >= minMovesFromGoal) {
-                    System.out.println("[LEVEL]  Good puzzle found!");
-                    System.out.println("[LEVEL] Scramble moves: " + scrambleMoves);
-                    System.out.println("[LEVEL] Misplaced tiles: " + misplacedTiles);
-                    System.out.println("[LEVEL] Inversion count: " + state.countInversions());
-                    return state;
-                }
+            if (!candidates.isEmpty()) {
+                previous = current;
+                // Pilih langkah acak selanjutnya
+                int randomIndex = (int) (Math.random() * candidates.size());
+                current = candidates.get(randomIndex);
             }
         }
 
-        if (bestState != null) {
-            System.out.println("[LEVEL]  Using best found puzzle");
-            System.out.println("[LEVEL] Misplaced tiles: " + bestDistance);
-            System.out.println("[LEVEL] Inversion count: " + bestState.countInversions());
-            return bestState;
-        }
-
-        System.out.println("[LEVEL]   Doing deep scramble...");
-        PuzzleState state = generateGoalState();
-        PuzzleState prevState = null;
-
-        for (int i = 0; i < maxScrambleMoves * 2; i++) {
-            List<PuzzleState> neighbors = state.getNeighbors();
-            if (!neighbors.isEmpty()) {
-                ArrayList<PuzzleState> validMoves = new ArrayList<>();
-                for (PuzzleState n : neighbors) {
-                    if (prevState == null || !n.getStateKey().equals(prevState.getStateKey())) {
-                        validMoves.add(n);
-                    }
-                }
-                if (!validMoves.isEmpty()) {
-                    prevState = state;
-                    state = validMoves.get((int)(Math.random() * validMoves.size()));
-                }
-            }
-        }
-
-        if (!state.isSolvable()) {
-            state.makeItSolvable();
-        }
-
-        System.out.println("[LEVEL] Deep scramble complete");
-        System.out.println("[LEVEL] Inversion count: " + state.countInversions());
-
-        return state;
-    }
-
-    private int countMisplacedTiles(PuzzleState state) {
-        int[][] board = state.getBoard();
-        int rows = state.getRows();
-        int cols = state.getCols();
-        int misplaced = 0;
-
-        int expectedValue = 1;
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (i == rows - 1 && j == cols - 1) {
-                    if (board[i][j] != 0) {
-                        misplaced++;
-                    }
-                } else {
-                    if (board[i][j] != expectedValue) {
-                        misplaced++;
-                    }
-                    expectedValue++;
-                }
-            }
-        }
-
-        return misplaced;
+        // 5. PENTING: Putus rantai parent (History) agar ini jadi START murni
+        // Kita buat object PuzzleState baru dari posisi terakhir
+        PuzzleState finalState = new PuzzleState(current.getBoard(), rows, cols);
+        
+        System.out.println("[LEVEL] Scramble complete. Start Key: " + finalState.getStateKey());
+        
+        return finalState;
     }
 
     public PuzzleState generateGoalState() {

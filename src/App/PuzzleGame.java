@@ -41,11 +41,19 @@ public class PuzzleGame extends JFrame {
     }
 
     private void initializeGame(GameLevel.Difficulty difficulty) {
+
         gameLevel = new GameLevel(difficulty);
         moveHistory = new MoveHistory(100);
 
-        currentState = gameLevel.generateInitialState();
         goalState = gameLevel.generateGoalState();
+        currentState = gameLevel.generateInitialState();
+
+        if (currentState == null || goalState == null) {
+            return;
+        }
+        System.out.println("[INIT] Goal state: " + goalState.getStateKey());
+        System.out.println("[INIT] Start state: " + currentState.getStateKey());
+        System.out.println("[INIT] States are different: " + !currentState.getStateKey().equals(goalState.getStateKey()));
 
         setupUI();
         updateBoard();
@@ -265,7 +273,10 @@ public class PuzzleGame extends JFrame {
         currentState = gameLevel.generateInitialState();
         gameLevel.resetMoves();
 
+        System.out.println("[NEW GAME] New state: " + currentState.getStateKey());
+        System.out.println("[NEW GAME] Goal state: " + goalState.getStateKey());
         System.out.println("[NEW GAME] State generated, updating board...");
+        
         updateBoard();
         updateInfo();
         startGameTimer();
@@ -285,39 +296,125 @@ public class PuzzleGame extends JFrame {
 
     private void showHint() {
         System.out.println("[HINT] Starting hint calculation...");
+        System.out.println("[HINT] Current state: " + currentState.getStateKey());
+        System.out.println("[HINT] Goal state: " + goalState.getStateKey());
 
         SimpleSolver.showHint(this, currentState, goalState);
     }
 
     private void autoSolve() {
-        System.out.println("[AUTO SOLVE] Starting auto solve...");
+    System.out.println("[AUTO SOLVE] Request received.");
 
-        SimpleSolver.autoSolve(this, currentState, goalState, solution -> {
-            System.out.println("[AUTO SOLVE] Starting animation...");
-            gameTimer.stop();
+    // 1. CEK PENTING: Apakah kita sudah di Goal?
+    // Logika ini mencegah solver "jalan-jalan" kalau puzzle sudah jadi
+    if (currentState.getStateKey().equals(goalState.getStateKey())) {
+        JOptionPane.showMessageDialog(this, 
+            "Puzzle sudah selesai! Tidak perlu di-solve lagi.", 
+            "Info", JOptionPane.INFORMATION_MESSAGE);
+        return; // <--- BERHENTI DI SINI
+    }
 
-            Timer solveTimer = new Timer(300, null);
-            final int[] index = {1};
-
-            solveTimer.addActionListener(e -> {
-                if (index[0] < solution.size()) {
-                    currentState = solution.get(index[0]);
+        // ✅ FIX: Run solver in background thread to avoid blocking EDT
+        SwingWorker<java.util.List<PuzzleState>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected java.util.List<PuzzleState> doInBackground() {
+                System.out.println("[AUTO SOLVE WORKER] Running solver in background...");
+                final java.util.List<PuzzleState>[] result = new java.util.List[]{null};
+                
+                SimpleSolver.autoSolve(PuzzleGame.this, currentState, goalState, solution -> {
+                    System.out.println("[AUTO SOLVE WORKER] Solution received!");
+                    result[0] = solution;
+                });
+                
+                // Wait a bit for callback to complete
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                
+                return result[0];
+            }
+            
+            @Override
+            protected void done() {
+                try {
+                    java.util.List<PuzzleState> solution = get();
+                    
+                    if (solution == null || solution.isEmpty()) {
+                        System.out.println("[AUTO SOLVE] No solution found!");
+                        return;
+                    }
+                    
+                    System.out.println("[AUTO SOLVE] Solution received with " + solution.size() + " states");
+                    System.out.println("[AUTO SOLVE] Starting animation on EDT...");
+                    
+                    // Debug: Print first few states
+                    for (int i = 0; i < Math.min(3, solution.size()); i++) {
+                        System.out.println("[AUTO SOLVE] State " + i + ": " + solution.get(i).getStateKey());
+                    }
+                    
+                    gameTimer.stop();
+                    
+                    // Start animation
+                    animateSolution(solution);
+                    
+                } catch (Exception ex) {
+                    System.err.println("[AUTO SOLVE] Error: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+        };
+        
+        worker.execute();
+    }
+    
+    private void animateSolution(java.util.List<PuzzleState> solution) {
+        System.out.println("[ANIMATE] Starting animation with " + solution.size() + " states");
+        
+        final int totalSteps = solution.size() - 1;
+        final int[] currentStep = {0};
+        
+        Timer animationTimer = new Timer(500, null);
+        
+        animationTimer.addActionListener(e -> {
+            currentStep[0]++;
+            
+            if (currentStep[0] < solution.size()) {
+                System.out.println("[ANIMATE] Step " + currentStep[0] + "/" + totalSteps);
+                
+                PuzzleState nextState = solution.get(currentStep[0]);
+                System.out.println("[ANIMATE] Applying: " + nextState.getStateKey());
+                System.out.println("[ANIMATE] Move: " + nextState.getMoveDescription());
+                
+                // Update state
+                currentState = nextState;
+                
+                // Force UI update on EDT
+                SwingUtilities.invokeLater(() -> {
                     updateBoard();
-                    System.out.println("[AUTO SOLVE] Step " + index[0] + "/" + (solution.size() - 1));
-                    index[0]++;
-                } else {
-                    solveTimer.stop();
-                    System.out.println("[AUTO SOLVE] Animation complete!");
-                    JOptionPane.showMessageDialog(this,
-                            "Auto solve complete!",
+                    gridPanel.revalidate();
+                    gridPanel.repaint();
+                    System.out.println("[ANIMATE] UI updated for step " + currentStep[0]);
+                });
+                
+            } else {
+                System.out.println("[ANIMATE] Animation complete!");
+                animationTimer.stop();
+                
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(PuzzleGame.this,
+                            "Auto solve complete!\nPuzzle solved in " + totalSteps + " moves.",
                             "Success",
                             JOptionPane.INFORMATION_MESSAGE);
                     checkWin();
-                }
-            });
-
-            solveTimer.start();
+                });
+            }
         });
+        
+        System.out.println("[ANIMATE] Starting timer...");
+        animationTimer.start();
+        System.out.println("[ANIMATE] Timer running: " + animationTimer.isRunning());
     }
 
     private void changeDifficulty(GameLevel.Difficulty newDifficulty) {

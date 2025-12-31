@@ -1,248 +1,183 @@
 package core;
 
 import java.util.*;
+import java.awt.Point;
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * IMPLEMENTASI ALGORITMA A* (A-STAR)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Penerapan Struktur Data:
+ * 1. PRIORITY QUEUE (Min-Heap): Menggantikan Queue biasa pada BFS.
+ * Berguna untuk mengambil node dengan biaya (cost) terendah secara otomatis.
+ * 2. HASHMAP: Untuk menyimpan 'visited' nodes dengan akses O(1).
+ * 3. GRAPH: Representasi ruang keadaan (State Space).
+ * * Keunggulan: Bisa menyelesaikan puzzle 4x4 (15-puzzle) dalam hitungan detik.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 public class OptimizedPuzzleSolver {
 
     private final PuzzleState goalState;
     private int maxIterations;
-    private boolean verboseMode;
+    
+    // Map untuk menyimpan koordinat tujuan setiap angka (Optimasi hitungan)
+    private final Map<Integer, Point> goalPositions;
 
     public OptimizedPuzzleSolver(PuzzleState goalState) {
         this.goalState = goalState;
-        this.maxIterations = 2000000;
-        this.verboseMode = true;
+        // A* jauh lebih cepat, 200rb iterasi biasanya sudah cukup untuk 4x4
+        this.maxIterations = 200000; 
+        this.goalPositions = precomputeGoalPositions(goalState);
     }
-
-    public void setVerboseMode(boolean verbose) {
-        this.verboseMode = verbose;
-    }
-
+    
     public void setMaxIterations(int max) {
         this.maxIterations = max;
     }
 
+    /**
+     * Node Wrapper untuk Priority Queue.
+     * Menyimpan state puzzle beserta nilai 'Score'-nya.
+     */
+    private static class SearchNode implements Comparable<SearchNode> {
+        PuzzleState state;
+        int g; // Cost so far (langkah yang sudah diambil dari start)
+        int h; // Heuristic (estimasi jarak ke goal - Manhattan Distance)
+        int f; // Total Score (f = g + h)
+
+        public SearchNode(PuzzleState state, int g, int h) {
+            this.state = state;
+            this.g = g;
+            this.h = h;
+            this.f = g + h;
+        }
+
+        // Ini yang membuat PriorityQueue bekerja: Mengurutkan berdasarkan 'f' terkecil
+        @Override
+        public int compareTo(SearchNode other) {
+            return Integer.compare(this.f, other.f);
+        }
+    }
+
+    /**
+     * Method Utama Solver. 
+     * Menggunakan nama 'solveBFSOptimized' agar kompatibel dengan kode lama Anda,
+     * tapi isinya sekarang adalah logika A* SEARCH.
+     */
     public List<PuzzleState> solveBFSOptimized(PuzzleState startState) {
+        // Cek solvability
         if (!startState.isSolvable()) {
-            System.out.println("[OPTIMIZED BFS] Puzzle is not solvable!");
+            System.out.println("[A*] Puzzle logic says unsolvable.");
             return null;
         }
 
-        System.out.println("\n" + repeat("=", 60));
-        System.out.println(" STARTING BFS SEARCH");
-        System.out.println(repeat("=", 60));
-        System.out.println(" Start State:");
-        printBoard(startState.getBoard());
-        System.out.println(" Goal State:");
-        printBoard(goalState.getBoard());
-        System.out.println("  Max Iterations: " + maxIterations);
-        System.out.println(repeat("=", 60) + "\n");
+        System.out.println("[A*] Starting search (Manhattan Heuristic)...");
 
-        long startTime = System.currentTimeMillis();
+        // [STRUKTUR DATA] PriorityQueue (Min-Heap)
+        // Menyimpan node yang akan dieksplorasi, diurutkan berdasarkan yang paling menjanjikan.
+        PriorityQueue<SearchNode> openSet = new PriorityQueue<>();
+        
+        // [STRUKTUR DATA] HashMap
+        // Menyimpan cost terbaik (g-score) untuk mencapai state tertentu.
+        // Berfungsi sekaligus sebagai 'Visited Set'.
+        Map<String, Integer> gScoreMap = new HashMap<>();
 
-        Queue<PuzzleState> queue = new LinkedList<>();
-        ArrayList<String> visited = new ArrayList<>();
-
-        queue.add(startState);
-        visited.add(startState.getStateKey());
+        // Inisialisasi Awal
+        int startH = calculateManhattanDistance(startState);
+        SearchNode startNode = new SearchNode(startState, 0, startH);
+        
+        openSet.add(startNode);
+        gScoreMap.put(startState.getStateKey(), 0);
 
         int iterations = 0;
-        int maxQueueSize = 0;
-        int lastDisplayedDepth = -1;
 
-        while (!queue.isEmpty() && iterations < maxIterations) {
+        while (!openSet.isEmpty()) {
             iterations++;
-            maxQueueSize = Math.max(maxQueueSize, queue.size());
-
-            PuzzleState current = queue.poll();
-            int currentDepth = getDepth(current);
-
-            if (verboseMode) {
-                if (currentDepth > lastDisplayedDepth) {
-                    System.out.println("\n" + repeat("─", 60));
-                    System.out.println(" Exploring Depth: " + currentDepth);
-                    System.out.println("├─ Iterations so far: " + iterations);
-                    System.out.println("├─ Queue size: " + queue.size());
-                    System.out.println("└─ Visited states: " + visited.size());
-                    lastDisplayedDepth = currentDepth;
-                }
-
-                if (iterations % 100 == 0) {
-                    System.out.println("\n🔹 Iteration " + iterations + " (Depth " + currentDepth + "):");
-                    System.out.println("Exploring state:");
-                    printBoardCompact(current.getBoard());
-                    System.out.println("├─ Move from parent: " +
-                            (current.getParent() != null ? current.getMoveDescription() : "START"));
-                    System.out.println("└─ Queue size: " + queue.size() + " | Visited: " + visited.size());
-                }
-            } else {
-                if (iterations % 10000 == 0) {
-                    System.out.println("\n Milestone: " + iterations + " iterations");
-                    System.out.println("├─ Current depth: " + currentDepth);
-                    System.out.println("├─ Queue size: " + queue.size());
-                    System.out.println("└─ Visited: " + visited.size());
-                }
+            
+            // Safety break
+            if (iterations > maxIterations) {
+                System.out.println("[A*] Limit reached (" + iterations + ")");
+                return null; 
             }
 
+            // Ambil node dengan prioritas terbaik (f terendah)
+            SearchNode currentWrapper = openSet.poll();
+            PuzzleState current = currentWrapper.state;
+
+            // Cek apakah sudah sampai Goal?
             if (current.getStateKey().equals(goalState.getStateKey())) {
-                long elapsed = System.currentTimeMillis() - startTime;
-                List<PuzzleState> solution = reconstructPath(current);
-
-                System.out.println("\n" + repeat("=", 60));
-                System.out.println(" SOLUTION FOUND!");
-                System.out.println(repeat("=", 60));
-                System.out.println(" Statistics:");
-                System.out.println("├─ Total Iterations: " + iterations);
-                System.out.println("├─ Solution Depth: " + currentDepth + " moves");
-                System.out.println("├─ Solution Length: " + (solution.size() - 1) + " moves");
-                System.out.println("├─ States Explored: " + visited.size());
-                System.out.println("├─ Max Queue Size: " + maxQueueSize);
-                System.out.println("├─ Time Elapsed: " + elapsed + "ms");
-
-                if (elapsed > 0) {
-                    long speed = (iterations * 1000L) / elapsed;
-                    System.out.println("└─ Avg Speed: " + speed + " states/sec");
-                } else {
-                    System.out.println("└─ Avg Speed: Very fast!");
-                }
-
-                System.out.println(repeat("=", 60));
-
-                printSolutionPath(solution);
-
-                return solution;
+                System.out.println("[A*] Solution found in " + iterations + " iterations.");
+                return reconstructPath(current);
             }
 
-            List<PuzzleState> neighbors = current.getNeighbors();
-
-            for (PuzzleState neighbor : neighbors) {
+            // Generate Tetangga (Graph Expansion)
+            for (PuzzleState neighbor : current.getNeighbors()) {
+                int tentativeG = currentWrapper.g + 1; // Biaya langkah bertambah 1
                 String neighborKey = neighbor.getStateKey();
 
-                if (!containsVisited(visited, neighborKey)) {
-                    visited.add(neighborKey);
-                    queue.add(neighbor);
+                // Jika neighbor ini belum pernah dikunjungi, 
+                // ATAU kita menemukan jalan yang lebih pendek ke neighbor ini
+                if (!gScoreMap.containsKey(neighborKey) || tentativeG < gScoreMap.get(neighborKey)) {
+                    
+                    // Update cost terbaik
+                    gScoreMap.put(neighborKey, tentativeG);
+                    
+                    // Hitung Heuristik (Kecerdasan A*)
+                    int h = calculateManhattanDistance(neighbor);
+                    
+                    // Masukkan ke Priority Queue
+                    openSet.add(new SearchNode(neighbor, tentativeG, h));
+                }
+            }
+        }
 
-                    if (verboseMode && iterations % 500 == 0 && visited.size() < 1000) {
-                        System.out.println("  └─ Added neighbor: " + neighbor.getMoveDescription());
+        return null; // Tidak ada solusi ditemukan
+    }
+
+    /**
+     * FUNGSI HEURISTIK: MANHATTAN DISTANCE      * Menghitung total jarak setiap kotak ke posisi seharusnya.
+     * Menggunakan Array int[][] langsung agar AMAN dari error String parsing.
+     */
+    private int calculateManhattanDistance(PuzzleState state) {
+        int distance = 0;
+        int[][] board = state.getBoard();
+        int rows = state.getRows();
+        int cols = state.getCols();
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                int value = board[r][c];
+                if (value != 0) { // Abaikan kotak kosong (0)
+                    Point target = goalPositions.get(value);
+                    if (target != null) {
+                        // Rumus Manhattan: |x1 - x2| + |y1 - y2|
+                        distance += Math.abs(r - target.x) + Math.abs(c - target.y);
                     }
                 }
             }
         }
-
-        long elapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\n" + repeat("=", 60));
-        System.out.println(" NO SOLUTION FOUND");
-        System.out.println(repeat("=", 60));
-        System.out.println(" Statistics:");
-        System.out.println("├─ Total Iterations: " + iterations);
-        System.out.println("├─ Max Depth Reached: " + getDepth(queue.isEmpty() ? startState : queue.peek()));
-        System.out.println("├─ States Explored: " + visited.size());
-        System.out.println("├─ Max Queue Size: " + maxQueueSize);
-        System.out.println("├─ Time Elapsed: " + elapsed + "ms");
-        System.out.println("└─ Reason: " + (iterations >= maxIterations ?
-                "Max iterations reached" : "Queue exhausted"));
-        System.out.println(repeat("=", 60));
-        System.out.println(" Tip: Try increasing maxIterations or regenerate puzzle");
-        System.out.println();
-
-        return null;
+        return distance;
     }
 
-    private void printBoard(int[][] board) {
-        String topBottom = repeat("─", board[0].length * 4 - 1);
-        System.out.println("   ┌" + topBottom + "┐");
-        for (int[] ints : board) {
-            System.out.print("   │");
-            for (int j = 0; j < ints.length; j++) {
-                if (ints[j] == 0) {
-                    System.out.print(" * ");
-                } else {
-                    System.out.printf("%2d ", ints[j]);
-                }
-                if (j < ints.length - 1) System.out.print(" ");
-            }
-            System.out.println("│");
-        }
-        System.out.println("   └" + topBottom + "┘");
-    }
-
-    private void printBoardCompact(int[][] board) {
-        System.out.print("   [");
-        for (int i = 0; i < board.length; i++) {
-            for (int j = 0; j < board[i].length; j++) {
-                if (board[i][j] == 0) {
-                    System.out.print(" *");
-                } else {
-                    System.out.printf("%2d", board[i][j]);
-                }
-                if (i < board.length - 1 || j < board[i].length - 1) {
-                    System.out.print(" ");
-                }
-            }
-            if (i < board.length - 1) {
-                System.out.print(" | ");
+    // Pre-compute posisi target agar pencarian cepat (O(1))
+    private Map<Integer, Point> precomputeGoalPositions(PuzzleState goal) {
+        Map<Integer, Point> map = new HashMap<>();
+        int[][] board = goal.getBoard();
+        for (int r = 0; r < goal.getRows(); r++) {
+            for (int c = 0; c < goal.getCols(); c++) {
+                map.put(board[r][c], new Point(r, c));
             }
         }
-        System.out.println("]");
+        return map;
     }
 
-    private void printSolutionPath(List<PuzzleState> solution) {
-        System.out.println("\n  SOLUTION PATH:");
-        System.out.println(repeat("=", 60));
-
-        for (int i = 0; i < solution.size(); i++) {
-            PuzzleState state = solution.get(i);
-
-            if (i == 0) {
-                System.out.println("\n START (Step 0)");
-            } else {
-                System.out.println("\n Step " + i + ": " + state.getMoveDescription());
-            }
-
-            printBoard(state.getBoard());
-
-            if (i < solution.size() - 1) {
-                System.out.println("   ↓");
-            }
-        }
-
-        System.out.println("\n GOAL REACHED!");
-        System.out.println(repeat("=", 60) + "\n");
-    }
-
-    private String repeat(String str, int count) {
-        return String.valueOf(str).repeat(Math.max(0, count));
-    }
-
-    private boolean containsVisited(ArrayList<String> visited, String key) {
-        for (String item : visited) {
-            if (item.equals(key)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private int getDepth(PuzzleState state) {
-        int depth = 0;
-        PuzzleState current = state;
-        while (current.getParent() != null) {
-            depth++;
-            current = current.getParent();
-        }
-        return depth;
-    }
-
-    private List<PuzzleState> reconstructPath(PuzzleState goalState) {
+    // Rekonstruksi Jalur (Backtracking Tree)
+    private List<PuzzleState> reconstructPath(PuzzleState state) {
         LinkedList<PuzzleState> path = new LinkedList<>();
-        PuzzleState current = goalState;
-
+        PuzzleState current = state;
         while (current != null) {
-            path.addFirst(current);
+            path.addFirst(current); // Menambahkan ke depan list (Reverse order)
             current = current.getParent();
         }
-
         return path;
     }
-
 }
