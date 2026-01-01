@@ -1,11 +1,11 @@
-package game;
+package model;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class PuzzleButton extends JButton {
+public class Button extends JButton {
 
     private boolean isEmpty;
     private int value;
@@ -13,7 +13,7 @@ public class PuzzleButton extends JButton {
     private static final Color BORDER_HOVER = new Color(255, 215, 0);
     private static final Color EMPTY_COLOR = new Color(240, 240, 240);
 
-    public PuzzleButton(int value) {
+    public Button(int value) {
         super();
         this.value = value;
         this.isEmpty = (value == 0);

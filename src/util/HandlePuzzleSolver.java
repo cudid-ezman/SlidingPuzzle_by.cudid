@@ -1,12 +1,12 @@
-package core;
+package util;
 
 import javax.swing.*;
 import java.util.List;
 
 @SuppressWarnings("ALL")
-public class SimpleSolver {
+public class HandlePuzzleSolver {
 
-    private static List<PuzzleState> solvePuzzle(JFrame parent, PuzzleState currentState, PuzzleState goalState, String actionType) {
+    private static List<PuzzleTree> solvePuzzle(JFrame parent, PuzzleTree currentState, PuzzleTree goalState, String actionType) {
         if (parent == null || currentState == null || goalState == null) {
             System.err.println("[" + actionType + "] ERROR: Null parameters!");
             return null;
@@ -28,11 +28,11 @@ public class SimpleSolver {
         parent.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
 
         try {
-            OptimizedPuzzleSolver solver = new OptimizedPuzzleSolver(goalState);
-            solver.setMaxIterations(2000000);
+            PuzzleSolver solver = new PuzzleSolver(goalState);
+            solver.aturMaksIterasi(2000000);
 
             System.out.println("[" + actionType + "] Starting BFS solver...");
-            List<PuzzleState> solution = solver.solveBFSOptimized(currentState);
+            List<PuzzleTree> solution = solver.solve(currentState);
 
             parent.setCursor(java.awt.Cursor.getDefaultCursor());
 
@@ -40,11 +40,11 @@ public class SimpleSolver {
                 System.out.println("[" + actionType + "] No solution found!");
                 JOptionPane.showMessageDialog(parent,
                         """
-                                Could not find solution!
-                                This might be due to:
-                                1. Puzzle is too complex
-                                2. Max iterations reached
-                                Try regenerating the puzzle.""",
+                                tidak ditemukan solusi!
+                                mungkin eror antara :
+                                1. Adanya bug
+                                2. Melebihi maks iterasi
+                                muat ulang puzzle.""",
                         actionType,
                         JOptionPane.WARNING_MESSAGE);
                 return null;
@@ -59,16 +59,16 @@ public class SimpleSolver {
             JOptionPane.showMessageDialog(parent,
                     "Error during " + actionType.toLowerCase() + ":\n" + e.getMessage() + "\n\n" +
                             "Try:\n" +
-                            "1. Generate a new puzzle\n" +
-                            "2. Use a simpler difficulty level",
+                            "1. muat ulang new game\n" +
+                            "2. Coba dilevel rendah dulu",
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
 
-    public static void showHint(JFrame parent, PuzzleState currentState, PuzzleState goalState) {
-        List<PuzzleState> solution = solvePuzzle(parent, currentState, goalState, "HINT");
+    public static void showHint(JFrame parent, PuzzleTree currentState, PuzzleTree goalState) {
+        List<PuzzleTree> solution = solvePuzzle(parent, currentState, goalState, "HINT");
         
         if (solution == null) {
             return;
@@ -83,8 +83,8 @@ public class SimpleSolver {
             return;
         }
 
-        PuzzleState nextMove = solution.get(1);
-        String hint = nextMove.getMoveDescription();
+        PuzzleTree nextMove = solution.get(1);
+        String hint = nextMove.getDeskripsiMove();
         if (hint == null || hint.isEmpty()) {
             hint = "Move the empty tile";
         }
@@ -101,14 +101,14 @@ public class SimpleSolver {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-    public static void autoSolve(JFrame parent, PuzzleState currentState, PuzzleState goalState,
+    public static void autoSolve(JFrame parent, PuzzleTree currentState, PuzzleTree goalState,
                                  AutoSolveCallback callback) {
         if (callback == null) {
             System.err.println("[AUTO SOLVE] ERROR: Callback is null!");
             return;
         }
 
-        List<PuzzleState> solution = solvePuzzle(parent, currentState, goalState, "AUTO SOLVE");
+        List<PuzzleTree> solution = solvePuzzle(parent, currentState, goalState, "AUTO SOLVE");
         
         if (solution == null) {
             return;
@@ -120,6 +120,6 @@ public class SimpleSolver {
     }
 
     public interface AutoSolveCallback {
-        void onSolutionFound(List<PuzzleState> solution);
+        void onSolutionFound(List<PuzzleTree> solution);
     }
 }

@@ -1,11 +1,11 @@
-package core;
+package util;
 
 import java.util.Deque;
 import java.util.ArrayDeque;
 
 public class MoveHistory {
 
-    private final Deque<PuzzleState> history;
+    private final Deque<PuzzleTree> history;
     private final int maxHistorySize;
 
     public MoveHistory(int maxSize) {
@@ -13,14 +13,14 @@ public class MoveHistory {
         this.maxHistorySize = maxSize;
     }
 
-    public void push(PuzzleState state) {
+    public void push(PuzzleTree state) {
         if (history.size() >= maxHistorySize) {
             history.removeFirst();
         }
         history.push(state);
     }
 
-    public PuzzleState pop() {
+    public PuzzleTree pop() {
         if (isEmpty()) {
             return null;
         }

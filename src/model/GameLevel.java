@@ -1,15 +1,14 @@
-package game;
+package model;
 
-import core.PuzzleState;
-
-import java.util.*;
+import util.PuzzleTree;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameLevel {
-
     public record Difficulty(String name, int rows, int cols, String description) {
-        public static final Difficulty EASY = new Difficulty("EASY", 3, 3, "Mudah - 3x3");
-        public static final Difficulty MEDIUM = new Difficulty("MEDIUM", 4, 3, "Sedang - 4x3");
-        public static final Difficulty HARD = new Difficulty("HARD", 4, 4, "Sulit - 4x4");
+        public static final Difficulty EASY = new Difficulty("EASY", 3, 3, "EASY - 3x3");
+        public static final Difficulty MEDIUM = new Difficulty("MEDIUM", 4, 3, "MEDIUM - 4x3");
+        public static final Difficulty HARD = new Difficulty("HARD", 4, 4, "HARD - 4x4");
     }
 
     private static class ScoreEntry {
@@ -35,11 +34,11 @@ public class GameLevel {
         this.currentDifficulty = difficulty;
         this.currentLevelNumber = 1;
         this.totalMoves = 0;
-        this.bestScore = getBestScoreForDifficulty(difficulty);
+        this.bestScore = ambilScoreTerbaik(difficulty);
         this.startTime = System.currentTimeMillis();
     }
 
-    private int getBestScoreForDifficulty(Difficulty difficulty) {
+    private int ambilScoreTerbaik(Difficulty difficulty) {
         for (ScoreEntry entry : bestScores) {
             if (entry.difficulty.equals(difficulty)) {
                 return entry.score;
@@ -48,7 +47,7 @@ public class GameLevel {
         return Integer.MAX_VALUE;
     }
 
-    private void setBestScoreForDifficulty(Difficulty difficulty, int score) {
+    private void simpanScoreTerbaik(Difficulty difficulty, int score) {
         for (ScoreEntry entry : bestScores) {
             if (entry.difficulty.equals(difficulty)) {
                 entry.score = score;
@@ -58,36 +57,31 @@ public class GameLevel {
         bestScores.add(new ScoreEntry(difficulty, score));
     }
 
-   public PuzzleState generateInitialState() {
-        // 1. AMBIL UKURAN DARI DIFFICULTY (Agar variable rows & cols dikenali)
+   public PuzzleTree StateAwal() {
         int rows = currentDifficulty.rows();
         int cols = currentDifficulty.cols();
 
         System.out.println("[LEVEL] Generating puzzle with Random Walk...");
 
-        // 2. Mulai dari Goal State
-        PuzzleState current = generateGoalState();
-        PuzzleState previous = null;
+        PuzzleTree current = stateTujuan();
+        PuzzleTree previous = null;
         
-        // 3. Tentukan jumlah langkah acak berdasarkan kesulitan
         int scrambleSteps;
         if (currentDifficulty.equals(Difficulty.EASY)) {
             scrambleSteps = 15;
         } else if (currentDifficulty.equals(Difficulty.MEDIUM)) {
             scrambleSteps = 30;
         } else {
-            scrambleSteps = 50; // HARD
+            scrambleSteps = 50;
         }
 
         System.out.println("[LEVEL] Scrambling " + scrambleSteps + " steps...");
 
-        // 4. Lakukan Pengacakan (Random Walk)
         for (int i = 0; i < scrambleSteps; i++) {
-            List<PuzzleState> neighbors = current.getNeighbors();
-            List<PuzzleState> candidates = new ArrayList<>();
+            List<PuzzleTree> neighbors = current.getNeighbors();
+            List<PuzzleTree> candidates = new ArrayList<>();
 
-            for (PuzzleState neighbor : neighbors) {
-                // Cegah gerak maju-mundur (jangan balik ke state sebelumnya)
+            for (PuzzleTree neighbor : neighbors) {
                 if (previous == null || !neighbor.getStateKey().equals(previous.getStateKey())) {
                     candidates.add(neighbor);
                 }
@@ -95,22 +89,19 @@ public class GameLevel {
 
             if (!candidates.isEmpty()) {
                 previous = current;
-                // Pilih langkah acak selanjutnya
                 int randomIndex = (int) (Math.random() * candidates.size());
                 current = candidates.get(randomIndex);
             }
         }
 
-        // 5. PENTING: Putus rantai parent (History) agar ini jadi START murni
-        // Kita buat object PuzzleState baru dari posisi terakhir
-        PuzzleState finalState = new PuzzleState(current.getBoard(), rows, cols);
+        PuzzleTree finalState = new PuzzleTree(current.getBoard(), rows, cols);
         
         System.out.println("[LEVEL] Scramble complete. Start Key: " + finalState.getStateKey());
         
         return finalState;
     }
 
-    public PuzzleState generateGoalState() {
+    public PuzzleTree stateTujuan() {
         int rows = currentDifficulty.rows();
         int cols = currentDifficulty.cols();
         int[][] board = new int[rows][cols];
@@ -126,10 +117,10 @@ public class GameLevel {
             }
         }
 
-        return new PuzzleState(board, rows, cols);
+        return new PuzzleTree(board, rows, cols);
     }
 
-    public void incrementMoves() {
+    public void tambahLangkah() {
         totalMoves++;
     }
 
@@ -150,11 +141,11 @@ public class GameLevel {
     public void updateBestScore() {
         if (totalMoves < bestScore) {
             bestScore = totalMoves;
-            setBestScoreForDifficulty(currentDifficulty, totalMoves);
+            simpanScoreTerbaik(currentDifficulty, totalMoves);
         }
     }
 
-    public String getFormattedTime() {
+    public String ambilWaktu() {
         long seconds = elapsedTime / 1000;
         long minutes = seconds / 60;
         seconds = seconds % 60;
@@ -166,13 +157,13 @@ public class GameLevel {
     public int getTotalMoves() { return totalMoves; }
 
     public String getLevelInfo() {
-        return String.format("Level %d - %s", currentLevelNumber, currentDifficulty.description());
+        return String.format("Game %d - %s", currentLevelNumber, currentDifficulty.description());
     }
 
     public String getScoreInfo() {
         return String.format("Moves: %d | Best: %s | Time: %s",
                 totalMoves,
                 bestScore == Integer.MAX_VALUE ? "-" : String.valueOf(bestScore),
-                getFormattedTime());
+                ambilWaktu());
     }
 }

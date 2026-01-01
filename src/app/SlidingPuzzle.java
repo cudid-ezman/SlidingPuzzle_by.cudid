@@ -1,28 +1,31 @@
-package App;
+package app;
 
-import core.*;
-import game.GameLevel;
-import game.PuzzleButton;
+import util.MoveHistory;
+import util.PuzzleTree;
+import util.HandlePuzzleSolver;
+import model.GameLevel;
+import model.Button;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.CropImageFilter;
 import java.awt.image.FilteredImageSource;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
+import javax.swing.*;
 
-public class PuzzleGame extends JFrame {
+public class SlidingPuzzle extends JFrame {
 
     private JPanel gridPanel;
     private JPanel controlPanel;
     private JPanel infoPanel;
-    private PuzzleButton[][] buttons;
+    private Button[][] buttons;
 
     private GameLevel gameLevel;
-    private PuzzleState currentState;
-    private PuzzleState goalState;
+    private PuzzleTree stateSekarang;
+    private PuzzleTree stateTujuan;
     private MoveHistory moveHistory;
 
     private JLabel levelLabel;
@@ -32,36 +35,42 @@ public class PuzzleGame extends JFrame {
 
     private BufferedImage puzzleImage;
     private boolean useImage = false;
+    private BufferedImage currentOriginalImage = null;
 
     private static final int TILE_SIZE = 80;
     private static final Color BG_COLOR = new Color(245, 245, 245);
 
-    public PuzzleGame() {
-        initializeGame(GameLevel.Difficulty.EASY);
+    public SlidingPuzzle() {
+        inisialisasiGame(GameLevel.Difficulty.EASY);
     }
 
-    private void initializeGame(GameLevel.Difficulty difficulty) {
+    private void inisialisasiGame(GameLevel.Difficulty difficulty) {
 
         gameLevel = new GameLevel(difficulty);
         moveHistory = new MoveHistory(100);
 
-        goalState = gameLevel.generateGoalState();
-        currentState = gameLevel.generateInitialState();
+        stateTujuan = gameLevel.stateTujuan();
+        stateSekarang = gameLevel.StateAwal();
 
-        if (currentState == null || goalState == null) {
+        if (stateSekarang == null || stateTujuan == null) {
             return;
         }
-        System.out.println("[INIT] Goal state: " + goalState.getStateKey());
-        System.out.println("[INIT] Start state: " + currentState.getStateKey());
-        System.out.println("[INIT] States are different: " + !currentState.getStateKey().equals(goalState.getStateKey()));
+        System.out.println("[INIT] Goal state: " + stateTujuan.getStateKey());
+        System.out.println("[INIT] Start state: " + stateSekarang.getStateKey());
+        System.out.println("[INIT] States are different: " + !stateSekarang.getStateKey().equals(stateTujuan.getStateKey()));
 
         setupUI();
+
+        if (currentOriginalImage != null) {
+            applyImageToCurrentLevel();
+        }
+
         updateBoard();
         startGameTimer();
     }
 
     private void setupUI() {
-        setTitle("Sliding Puzzle Game - Multi Level");
+        setTitle("Sliding Puzzle Game UAS PM");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         getContentPane().setBackground(BG_COLOR);
@@ -115,15 +124,15 @@ public class PuzzleGame extends JFrame {
         gridPanel.setBackground(Color.DARK_GRAY);
         gridPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 5));
 
-        buttons = new PuzzleButton[rows][cols];
+        buttons = new Button[rows][cols];
 
         Dimension buttonSize = new Dimension(TILE_SIZE, TILE_SIZE);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                int value = currentState.getValueAt(i, j);
+                int value = stateSekarang.ambilNilaidi(i, j);
 
-                PuzzleButton btn = new PuzzleButton(value);
+                Button btn = new Button(value);
                 btn.setPreferredSize(buttonSize);
 
                 final int row = i;
@@ -143,17 +152,17 @@ public class PuzzleGame extends JFrame {
 
         JButton newGameBtn = createButton("New Game", new Color(52, 152, 219));
         JButton undoBtn = createButton("Undo", new Color(155, 89, 182));
-        JButton hintBtn = createButton("Hint", new Color(241, 196, 15));
+        JButton hintBtn = createButton("Petunjuk", new Color(241, 196, 15));
 
-        JButton easyBtn = createButton("Easy 3x3", new Color(46, 204, 113));
-        JButton mediumBtn = createButton("Medium 4x3", new Color(230, 126, 34));
-        JButton hardBtn = createButton("Hard 4x4", new Color(231, 76, 60));
+        JButton easyBtn = createButton("3x3", new Color(46, 204, 113));
+        JButton mediumBtn = createButton("4x3", new Color(230, 126, 34));
+        JButton hardBtn = createButton("4x4", new Color(231, 76, 60));
 
         JButton autoSolveBtn = createButton("Auto Solve", new Color(52, 73, 94));
         JButton loadImageBtn = createButton("Load Image", new Color(26, 188, 156));
         JButton exitBtn = createButton("Exit", new Color(189, 195, 199));
 
-        
+
         newGameBtn.addActionListener(e -> newGame());
         undoBtn.addActionListener(e -> undoMove());
         hintBtn.addActionListener(e -> showHint());
@@ -188,7 +197,7 @@ public class PuzzleGame extends JFrame {
     }
 
     private void handleTileClick(int row, int col) {
-        Point emptyPos = currentState.getEmptyPosition();
+        Point emptyPos = stateSekarang.getEmptyPosition();
         int emptyRow = emptyPos.x;
         int emptyCol = emptyPos.y;
 
@@ -199,17 +208,17 @@ public class PuzzleGame extends JFrame {
             return;
         }
 
-        moveHistory.push(currentState);
+        moveHistory.push(stateSekarang);
 
-        int[][] newBoard = copyBoard(currentState.getBoard());
+        int[][] newBoard = copyBoard(stateSekarang.getBoard());
         newBoard[emptyRow][emptyCol] = newBoard[row][col];
         newBoard[row][col] = 0;
 
-        currentState = new PuzzleState(newBoard,
+        stateSekarang = new PuzzleTree(newBoard,
                 gameLevel.getCurrentDifficulty().rows(),
                 gameLevel.getCurrentDifficulty().cols());
 
-        gameLevel.incrementMoves();
+        gameLevel.tambahLangkah();
         updateBoard();
         updateInfo();
 
@@ -222,7 +231,7 @@ public class PuzzleGame extends JFrame {
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                int value = currentState.getValueAt(i, j);
+                int value = stateSekarang.ambilNilaidi(i, j);
 
                 if (useImage && puzzleImage != null) {
                     if (value == 0) {
@@ -242,18 +251,18 @@ public class PuzzleGame extends JFrame {
         levelLabel.setText(gameLevel.getLevelInfo());
         movesLabel.setText(gameLevel.getScoreInfo());
         gameLevel.updateElapsedTime();
-        timeLabel.setText("Time: " + gameLevel.getFormattedTime());
+        timeLabel.setText("Time: " + gameLevel.ambilWaktu());
     }
 
     private void checkWin() {
-        if (currentState.getStateKey().equals(goalState.getStateKey())) {
+        if (stateSekarang.getStateKey().equals(stateTujuan.getStateKey())) {
             gameTimer.stop();
             gameLevel.updateBestScore();
 
             int option = JOptionPane.showConfirmDialog(this,
                     "Selamat! Puzzle selesai!\n" +
                             "Moves: " + gameLevel.getTotalMoves() + "\n" +
-                            "Time: " + gameLevel.getFormattedTime() + "\n\n" +
+                            "Time: " + gameLevel.ambilWaktu() + "\n\n" +
                             "Main level berikutnya?",
                     "Puzzle Completed!",
                     JOptionPane.YES_NO_OPTION,
@@ -270,13 +279,13 @@ public class PuzzleGame extends JFrame {
         System.out.println("[NEW GAME] Starting new game...");
 
         moveHistory.clear();
-        currentState = gameLevel.generateInitialState();
+        stateSekarang = gameLevel.StateAwal();
         gameLevel.resetMoves();
 
-        System.out.println("[NEW GAME] New state: " + currentState.getStateKey());
-        System.out.println("[NEW GAME] Goal state: " + goalState.getStateKey());
+        System.out.println("[NEW GAME] New state: " + stateSekarang.getStateKey());
+        System.out.println("[NEW GAME] Goal state: " + stateTujuan.getStateKey());
         System.out.println("[NEW GAME] State generated, updating board...");
-        
+
         updateBoard();
         updateInfo();
         startGameTimer();
@@ -286,7 +295,7 @@ public class PuzzleGame extends JFrame {
 
     private void undoMove() {
         if (moveHistory.canUndo()) {
-            currentState = moveHistory.pop();
+            stateSekarang = moveHistory.pop();
             updateBoard();
             updateInfo();
         } else {
@@ -296,114 +305,103 @@ public class PuzzleGame extends JFrame {
 
     private void showHint() {
         System.out.println("[HINT] Starting hint calculation...");
-        System.out.println("[HINT] Current state: " + currentState.getStateKey());
-        System.out.println("[HINT] Goal state: " + goalState.getStateKey());
+        System.out.println("[HINT] Current state: " + stateSekarang.getStateKey());
+        System.out.println("[HINT] Goal state: " + stateTujuan.getStateKey());
 
-        SimpleSolver.showHint(this, currentState, goalState);
+        HandlePuzzleSolver.showHint(this, stateSekarang, stateTujuan);
     }
 
     private void autoSolve() {
     System.out.println("[AUTO SOLVE] Request received.");
 
-    // 1. CEK PENTING: Apakah kita sudah di Goal?
-    // Logika ini mencegah solver "jalan-jalan" kalau puzzle sudah jadi
-    if (currentState.getStateKey().equals(goalState.getStateKey())) {
-        JOptionPane.showMessageDialog(this, 
-            "Puzzle sudah selesai! Tidak perlu di-solve lagi.", 
+    if (stateSekarang.getStateKey().equals(stateTujuan.getStateKey())) {
+        JOptionPane.showMessageDialog(this,
+            "Puzzle sudah selesai! Tidak perlu di-solve lagi.",
             "Info", JOptionPane.INFORMATION_MESSAGE);
-        return; // <--- BERHENTI DI SINI
+        return;
     }
 
-        // ✅ FIX: Run solver in background thread to avoid blocking EDT
-        SwingWorker<java.util.List<PuzzleState>, Void> worker = new SwingWorker<>() {
+        SwingWorker<java.util.List<PuzzleTree>, Void> worker = new SwingWorker<>() {
             @Override
-            protected java.util.List<PuzzleState> doInBackground() {
+            protected java.util.List<PuzzleTree> doInBackground() {
                 System.out.println("[AUTO SOLVE WORKER] Running solver in background...");
-                final java.util.List<PuzzleState>[] result = new java.util.List[]{null};
-                
-                SimpleSolver.autoSolve(PuzzleGame.this, currentState, goalState, solution -> {
+                final AtomicReference<java.util.List<PuzzleTree>> result = new AtomicReference<>(null);
+
+                HandlePuzzleSolver.autoSolve(SlidingPuzzle.this, stateSekarang, stateTujuan, solution -> {
                     System.out.println("[AUTO SOLVE WORKER] Solution received!");
-                    result[0] = solution;
+                    result.set(solution);
                 });
-                
-                // Wait a bit for callback to complete
+
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-                
-                return result[0];
+
+                return result.get();
             }
-            
+
             @Override
             protected void done() {
                 try {
-                    java.util.List<PuzzleState> solution = get();
-                    
+                    java.util.List<PuzzleTree> solution = get();
+
                     if (solution == null || solution.isEmpty()) {
                         System.out.println("[AUTO SOLVE] No solution found!");
                         return;
                     }
-                    
+
                     System.out.println("[AUTO SOLVE] Solution received with " + solution.size() + " states");
                     System.out.println("[AUTO SOLVE] Starting animation on EDT...");
-                    
-                    // Debug: Print first few states
-                    for (int i = 0; i < Math.min(3, solution.size()); i++) {
-                        System.out.println("[AUTO SOLVE] State " + i + ": " + solution.get(i).getStateKey());
-                    }
-                    
+
                     gameTimer.stop();
-                    
+
                     // Start animation
-                    animateSolution(solution);
-                    
+                    animasiSolve(solution);
+
                 } catch (Exception ex) {
                     System.err.println("[AUTO SOLVE] Error: " + ex.getMessage());
                     ex.printStackTrace();
                 }
             }
         };
-        
+
         worker.execute();
     }
-    
-    private void animateSolution(java.util.List<PuzzleState> solution) {
-        System.out.println("[ANIMATE] Starting animation with " + solution.size() + " states");
-        
+
+    private void animasiSolve(java.util.List<PuzzleTree> solution) {
+         System.out.println("[ANIMATE] Starting animation with " + solution.size() + " states");
+
         final int totalSteps = solution.size() - 1;
         final int[] currentStep = {0};
-        
+
         Timer animationTimer = new Timer(500, null);
-        
+
         animationTimer.addActionListener(e -> {
             currentStep[0]++;
-            
+
             if (currentStep[0] < solution.size()) {
                 System.out.println("[ANIMATE] Step " + currentStep[0] + "/" + totalSteps);
-                
-                PuzzleState nextState = solution.get(currentStep[0]);
+
+                PuzzleTree nextState = solution.get(currentStep[0]);
                 System.out.println("[ANIMATE] Applying: " + nextState.getStateKey());
-                System.out.println("[ANIMATE] Move: " + nextState.getMoveDescription());
-                
-                // Update state
-                currentState = nextState;
-                
-                // Force UI update on EDT
+                System.out.println("[ANIMATE] Move: " + nextState.getDeskripsiMove());
+
+                stateSekarang = nextState;
+
                 SwingUtilities.invokeLater(() -> {
                     updateBoard();
                     gridPanel.revalidate();
                     gridPanel.repaint();
                     System.out.println("[ANIMATE] UI updated for step " + currentStep[0]);
                 });
-                
+
             } else {
                 System.out.println("[ANIMATE] Animation complete!");
                 animationTimer.stop();
-                
+
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(PuzzleGame.this,
+                    JOptionPane.showMessageDialog(SlidingPuzzle.this,
                             "Auto solve complete!\nPuzzle solved in " + totalSteps + " moves.",
                             "Success",
                             JOptionPane.INFORMATION_MESSAGE);
@@ -411,7 +409,7 @@ public class PuzzleGame extends JFrame {
                 });
             }
         });
-        
+
         System.out.println("[ANIMATE] Starting timer...");
         animationTimer.start();
         System.out.println("[ANIMATE] Timer running: " + animationTimer.isRunning());
@@ -434,7 +432,7 @@ public class PuzzleGame extends JFrame {
         System.out.println("[LEVEL] Rebuilding UI...");
 
         getContentPane().removeAll();
-        initializeGame(newDifficulty);
+        inisialisasiGame(newDifficulty);
         revalidate();
         repaint();
         setVisible(true);
@@ -451,16 +449,8 @@ public class PuzzleGame extends JFrame {
         if (result == JFileChooser.APPROVE_OPTION) {
             try {
                 File file = fileChooser.getSelectedFile();
-                BufferedImage original = ImageIO.read(file);
-
-                int size = TILE_SIZE * Math.max(
-                        gameLevel.getCurrentDifficulty().rows(),
-                        gameLevel.getCurrentDifficulty().cols());
-
-                puzzleImage = resizeImage(original, size, size);
-                useImage = true;
-                updateBoard();
-
+                currentOriginalImage = ImageIO.read(file);
+                applyImageToCurrentLevel();
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this,
                         "Failed to load image: " + ex.getMessage(),
@@ -477,6 +467,20 @@ public class PuzzleGame extends JFrame {
         g.drawImage(original, 0, 0, width, height, null);
         g.dispose();
         return resized;
+    }
+
+    private void applyImageToCurrentLevel() {
+        if (currentOriginalImage == null) return;
+
+        int rows = gameLevel.getCurrentDifficulty().rows();
+        int cols = gameLevel.getCurrentDifficulty().cols();
+
+        int targetWidth = cols * TILE_SIZE;
+        int targetHeight = rows * TILE_SIZE;
+
+        puzzleImage = resizeImage(currentOriginalImage, targetWidth, targetHeight);
+        useImage = true;
+        updateBoard();
     }
 
     private Image createTileImage(int tileIndex) {
@@ -502,7 +506,7 @@ public class PuzzleGame extends JFrame {
 
         gameTimer = new Timer(1000, e -> {
             gameLevel.updateElapsedTime();
-            timeLabel.setText("Time: " + gameLevel.getFormattedTime());
+            timeLabel.setText("Time: " + gameLevel.ambilWaktu());
         });
         gameTimer.start();
     }
@@ -521,7 +525,7 @@ public class PuzzleGame extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            PuzzleGame game = new PuzzleGame();
+            SlidingPuzzle game = new SlidingPuzzle();
             game.setVisible(true);
         });
     }
