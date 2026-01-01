@@ -4,6 +4,7 @@ import util.PuzzleTree;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("ALL")
 public class GameLevel {
     public record Difficulty(String name, int rows, int cols, String description) {
         public static final Difficulty EASY = new Difficulty("EASY", 3, 3, "EASY - 3x3");

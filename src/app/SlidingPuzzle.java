@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
+@SuppressWarnings("ALL")
 public class SlidingPuzzle extends JFrame {
 
     private JPanel gridPanel;
@@ -74,6 +75,13 @@ public class SlidingPuzzle extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         getContentPane().setBackground(BG_COLOR);
+
+        try {
+            BufferedImage icon = ImageIO.read(new File("logo.png"));
+            setIconImage(icon);
+        } catch (IOException e) {
+            System.out.println("Warning: logo.png not found for app icon.");
+        }
 
         System.out.println("[UI] Setting up UI for " + gameLevel.getLevelInfo());
 

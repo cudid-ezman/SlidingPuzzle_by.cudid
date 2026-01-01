@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.LinkedList;
 
+@SuppressWarnings("ALL")
 public class PuzzleSolver {
 
     private final PuzzleTree goalState;
@@ -37,7 +38,6 @@ public class PuzzleSolver {
             this.f = g + h;
         }
 
-        // Ini yang membuat PriorityQueue bekerja: Mengurutkan berdasarkan 'f' terkecil
         @Override
         public int compareTo(SearchNode other) {
             return Integer.compare(this.f, other.f);

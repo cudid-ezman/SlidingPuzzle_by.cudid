@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@SuppressWarnings("ALL")
 public class PuzzleTree {
     private final PuzzleTree parent;
     private final String deskripsiMove;
